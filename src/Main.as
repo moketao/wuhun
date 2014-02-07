@@ -1,39 +1,35 @@
 package {
 	import flash.display.Sprite;
-	import flash.events.Event;
 	import flash.system.ApplicationDomain;
 	import flash.system.Capabilities;
 	import flash.system.Security;
+	
+	import net.flashpunk.Engine;
+	import net.flashpunk.FP;
 
-	public class Main extends Sprite {
+	public class Main extends Engine {
 		public static var data:*;
 
 		public function Main() {
-			Security.allowDomain("*");
-			this.addEventListener(Event.ADDED_TO_STAGE, init);
+			super(G.MAX_STAGE_WIDTH,G.MAX_STAGE_HEIGHT,G.FRAME_RATE,true);
+			FP.world = new MyWorld();
 		}
-
-		public function init(e:Event):void {
-
+		public override function init():void {
+			super.init();
+			
+			//security
+			Security.allowDomain("*");
+			
 			//config
-			//var a:ApplicationDomain = ApplicationDomain.currentDomain;//临时注释
-			//data=a.getDefinition("Config") as Class;//临时注释
-
+			var a:ApplicationDomain = ApplicationDomain.currentDomain;
+			data=a.getDefinition("Config") as Class;
+			
 			//preloader
-			//var root:Sprite = data.root as Sprite;
-			var root:Sprite=this; //临时处理，没有Preloader的情况下
-
+			var root:Sprite = data.root as Sprite;
+			
 			//stagemenu
 			new StageMenu(root);
 			StageMenu.addMenu("v" + Capabilities.version);
-
-			//layer
-			//Layer.init(data.layer);
-			Layer.init(this); //临时处理，没有Preloader的情况下
-
-			//game
-			//Game.init(data.layer.stage);
-			Game.init(stage); //临时处理，没有Preloader的情况下
 		}
 	}
 }

@@ -9,7 +9,7 @@ package {
 		public static var StoryNow:Boolean;
 		public static var DEFAULT_NAME:String="无名";
 		public static var FONT:String="宋体";
-		public static var FRAME_RATE:int=30;
+		public static var FRAME_RATE:int=3;
 		public static var Platform:String="QQ";
 		public static var m_strHost:String;
 		public static var recharge:String;
