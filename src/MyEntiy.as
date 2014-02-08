@@ -41,7 +41,6 @@ package
 			}
 			d.dir = dir;
 			move();
-			trace(dir);
 		}
 		
 		private function checkPress(dir:Point):Point
@@ -66,17 +65,17 @@ package
 				hasPressDir = true;
 			}
 			if(h==0 && v==0){
-				if(Input.lastKey == Key.D && Input.check(Key.D)){
-					h = 100;
+				if(Input.lastKey == Key.D){
+					if(Input.check(Key.D))h = 100;
 				}
-				if(Input.lastKey == Key.A && Input.check(Key.A)){
-					h = -100;
+				if(Input.lastKey == Key.A){
+					if(Input.check(Key.A))h = -100;
 				}
-				if(Input.lastKey == Key.W && Input.check(Key.W)){
-					v = -100;
+				if(Input.lastKey == Key.W){
+					if(Input.check(Key.W))v = -100;
 				}
-				if(Input.lastKey == Key.S && Input.check(Key.S)){
-					v = 100;
+				if(Input.lastKey == Key.S){
+					if(Input.check(Key.S))v = 100;
 				}		
 			}
 			dir.x = h;
