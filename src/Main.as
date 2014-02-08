@@ -6,8 +6,6 @@ package {
 	
 	import net.flashpunk.Engine;
 	import net.flashpunk.FP;
-	import net.flashpunk.utils.Input;
-	import net.flashpunk.utils.Key;
 
 	public class Main extends Engine {
 		public static var data:*;
@@ -23,7 +21,7 @@ package {
 			//安全选项
 			Security.allowDomain("*");
 			
-			//配置文件
+			//预加载Sprite传送过来的配置类
 			var a:ApplicationDomain = ApplicationDomain.currentDomain;
 			data=a.getDefinition("Config") as Class;
 			
@@ -34,11 +32,8 @@ package {
 			new StageMenu(root);
 			StageMenu.addMenu("v" + Capabilities.version);
 			
-			//预定义除了横向和纵向的其它四个行走方向
-			Input.define("AS",Key.A,Key.S);
-			Input.define("SD",Key.S,Key.D);
-			Input.define("DW",Key.D,Key.W);
-			Input.define("WA",Key.W,Key.A);
+			//预定义除了横向和纵向的其它行走方向
+			//Input.define("ASD",Key.A,Key.S,Key.D);
 		}
 	}
 }

@@ -3,8 +3,8 @@
 	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
 	import flash.ui.Mouse;
-
-	import net.flashpunk.*;
+	
+	import net.flashpunk.FP;
 
 	/**
 	 * Static class updated by Engine. Use for defining and checking keyboard/mouse input.
@@ -123,6 +123,7 @@
 				if (! _control[input]) return false;
 				var v:Vector.<int> = _control[input],
 					i:int = v.length;
+				var allOK:Boolean = true;
 				while (i --)
 				{
 					if (v[i] < 0)
@@ -130,9 +131,11 @@
 						if (_keyNum > 0) return true;
 						continue;
 					}
-					if (_key[v[i]]) return true;
+					if (!_key[v[i]]){
+						return false
+					}
 				}
-				return false;
+				return true;
 			}
 			return input < 0 ? _keyNum > 0 : _key[input];
 		}
