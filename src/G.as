@@ -13,6 +13,7 @@ package {
 		public static var Platform:String="QQ";
 		public static var m_strHost:String;
 		public static var recharge:String;
+		public static var SPEED:Number = 2;
 
 		public function G() {
 		}

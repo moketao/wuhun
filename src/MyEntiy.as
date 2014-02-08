@@ -1,34 +1,43 @@
 package
 {
+	import flash.utils.Dictionary;
+	
+	import data.PlayerData;
+	
 	import net.flashpunk.Entity;
-	import net.flashpunk.FP;
 	import net.flashpunk.graphics.Image;
 	import net.flashpunk.utils.Input;
 	import net.flashpunk.utils.Key;
 	
 	public class MyEntiy extends Entity
 	{
+		
+		/**所有玩家*/
+		public static var PlayerDic:Dictionary = new Dictionary();
+		
+		/**玩家自己的数据*/
+		public var d:PlayerData = new PlayerData();
+		
+		/**临时玩家形象*/
 		[Embed(source="sample-sprite.png")] private const PLAYER:Class;
+		
 		public function MyEntiy()
 		{
-			var img:Image = new Image(PLAYER);
-			this.graphic = img;
+			graphic = new Image(PLAYER);
 		}
 		public override function update():void{
-			var speed:int = 5;
 			if(Input.check(Key.D)){
-				x+=speed;
+				d.dir = 0;
 			}
 			if(Input.check(Key.A)){
-				x-=speed;
+				d.dir = 180;
 			}
 			if(Input.check(Key.W)){
-				y-=speed;
+				d.dir = 90;
 			}
 			if(Input.check(Key.S)){
-				y+=speed;
+				d.dir = 275;
 			}
-			trace(FP.stage.frameRate);
 		}
 	}
 }
