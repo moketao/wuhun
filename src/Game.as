@@ -1,7 +1,17 @@
 package
 {
+	import com.moketao.socket.CustomSocket;
+	
 	import flash.geom.Point;
+	import flash.text.TextField;
+	import flash.text.TextFieldType;
 	import flash.utils.Dictionary;
+	
+	import cmds.C10000Up;
+	import cmds.C12000Down;
+	import cmds.C12000Up;
+	import cmds.C12001Down;
+	import cmds.C12001Up;
 	
 	import data.PlayerData;
 	
@@ -26,6 +36,7 @@ package
 		public var d:PlayerData = new PlayerData();
 		public function Game()
 		{
+			
 			addEventListener(Event.ADDED_TO_STAGE,onAdd);
 		}
 		
@@ -34,8 +45,22 @@ package
 			trace("isHW Render:",isHW)
 			stage.addEventListener(TouchEvent.TOUCH,onT);
 			stage.addEventListener(Event.ENTER_FRAME,update);
-			var p:Splayer = new Splayer();
+			
+			p = new Splayer();
 			addChild(p);
+			
+			inputTxt = new TextField();
+			inputTxt.width = 250;
+			inputTxt.height = 50;
+			inputTxt.type = TextFieldType.INPUT;
+			inputTxt.text = "输入你的名字";
+			Starling.current.nativeOverlay.addChild(inputTxt);
+			
+			s = CustomSocket.getInstance();
+			s.addCmdListener(12001,on_12001_Down);
+			s.addCmdListener(12000,on12000);
+			startSocket();
+			
 		}
 		
 		private function update(e:Event):void{
@@ -45,16 +70,18 @@ package
 			if(dir.x==0 && dir.y==0) hasMove=false;
 			if(hasMove){
 				d.speed = G.speed;
+				d.dir = dir;
+				move();
 			}else{
 				dir.x = 0;
 				dir.y = 0;
 				d.speed = 0;
 			}
-			d.dir = dir;
-			move();
+			
 		}
 		private function checkPress(dir:Point):Point
 		{
+			if(Input.check(Key.ENTER))checkForTextInput();
 			var hasPressDir:Boolean = false;
 			var h:int = 0;
 			var v:int = 0;
@@ -92,14 +119,65 @@ package
 			dir.y = v;
 			return dir;
 		}
-		public static var point:Point = new Point;
-		public function move():void{
-			var targetPoint:Point = new Point(x+d.dir.x,y+d.dir.y);//相对坐标的dir（玩家作为原点），转换成绝对的（世界0点作为原点）
-			var speed:Number = d.speed;
-			if(speed>0){
-				FP.stepTowards(this,targetPoint.x,targetPoint.y,speed);//this向着dir这个目标点移动，速度为speed
+		
+		private function checkForTextInput():void{
+			var ob:* = Starling.current.nativeStage.focus;
+			if(ob==inputTxt){
+				Starling.current.nativeStage.focus = null;
+				login();
 			}
 		}
+		public function startSocket():void {
+			//s.start("s1.app888888.qqopenapp.com",8000);
+			if (s.connected)
+				s.close();
+			s.start("127.0.0.1", 8000);
+			trace("重新连接");
+		}
+		public var s:CustomSocket;
+		private function login():void{
+			//登录
+			var c1:C10000Up = new C10000Up();
+			c1.SID = inputTxt.text;
+			s.sendMessage(10000,c1);
+			
+			//进入地图A
+			var c2:C12000Up = new C12000Up();
+			c2.MapName = "MapA";
+			s.sendMessage(12000, c2);
+			
+		}
+		private function on12000(vo:C12000Down):void{
+			if(vo.Flag==1)trace("进入地图");
+		}
+		public static var point:Point = new Point;
+
+		private var p:Splayer;
+
+		private var inputTxt:flash.text.TextField;
+		public function move():void{
+			var pdir:Point = d.dir;
+			var targetPoint:Point = new Point(p.x+pdir.x,p.y+pdir.y);//相对坐标的dir（玩家作为原点），转换成绝对的（世界0点作为原点）
+			var speed:Number = d.speed;
+			if(speed>0){
+				FP.stepTowards(p,targetPoint.x,targetPoint.y,speed);//this向着dir这个目标点移动，速度为speed
+				send_12001_Up();
+			}
+		}
+		/** 移动 **/
+		private function send_12001_Up():void{
+			var c3:C12001Up = new C12001Up();
+			c3.XX = p.x;
+			c3.ZZ = p.y;
+			c3.YY = 0;
+			s.sendMessage(12001, c3);
+		}
+		private function on_12001_Down(vo:C12001Down):void{
+			trace("=====================");
+			trace(vo.XX);
+			trace(vo.ZZ);
+			trace(vo.YY);
+		}	
 		private function onT(e:TouchEvent):void{
 			var touch:Touch = e.getTouch(stage);
 			if(!touch) return;
