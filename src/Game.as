@@ -5,33 +5,44 @@ package
 	
 	import data.PlayerData;
 	
-	import net.flashpunk.Entity;
 	import net.flashpunk.FP;
-	import net.flashpunk.graphics.Image;
 	import net.flashpunk.utils.Input;
 	import net.flashpunk.utils.Key;
 	
-	public class MyEntiy extends Entity
+	import starling.core.Starling;
+	import starling.display.Sprite;
+	import starling.events.Event;
+	import starling.events.Touch;
+	import starling.events.TouchEvent;
+	
+	public class Game extends Sprite
 	{
-		
+		private var mouseX:Number;
+		private var mouseY:Number;
 		/**所有玩家*/
 		public static var PlayerDic:Dictionary = new Dictionary();
 		
 		/**玩家自己的数据*/
 		public var d:PlayerData = new PlayerData();
-		
-		/**临时玩家形象*/
-		[Embed(source="sample-sprite.png")] private const PLAYER:Class;
-		
-		public function MyEntiy()
+		public function Game()
 		{
-			graphic = new Image(PLAYER);
+			addEventListener(Event.ADDED_TO_STAGE,onAdd);
 		}
-		public override function update():void{
+		
+		private function onAdd(e:Event):void{
+			var isHW:Boolean = Starling.context.driverInfo.toLowerCase().indexOf("software") == -1;
+			trace("isHW Render:",isHW)
+			stage.addEventListener(TouchEvent.TOUCH,onT);
+			stage.addEventListener(Event.ENTER_FRAME,update);
+			var p:Splayer = new Splayer();
+			addChild(p);
+		}
+		
+		private function update(e:Event):void{
 			var hasMove:Boolean = true;
 			var dir:Point = d.dir;//虚拟移动目标终点，这个值将来有可能是从服务端传过来的，用于异步移动误差处理
-				dir = checkPress(dir);
-				if(dir.x==0 && dir.y==0) hasMove=false;
+			dir = checkPress(dir);
+			if(dir.x==0 && dir.y==0) hasMove=false;
 			if(hasMove){
 				d.speed = G.speed;
 			}else{
@@ -42,7 +53,6 @@ package
 			d.dir = dir;
 			move();
 		}
-		
 		private function checkPress(dir:Point):Point
 		{
 			var hasPressDir:Boolean = false;
@@ -89,6 +99,13 @@ package
 			if(speed>0){
 				FP.stepTowards(this,targetPoint.x,targetPoint.y,speed);//this向着dir这个目标点移动，速度为speed
 			}
+		}
+		private function onT(e:TouchEvent):void{
+			var touch:Touch = e.getTouch(stage);
+			if(!touch) return;
+			var pos:Point = touch.getLocation(stage);
+			mouseX = pos.x;
+			mouseY = pos.y;
 		}
 	}
 }
