@@ -137,6 +137,7 @@ package com.moketao.socket {
 			var vo:*;
 			if(b.bytesAvailable>0){
 				var ob:Object = CommandMap.getCmdOB(num);
+				if(!ob)return;
 				var i:ISocketDown = ob as ISocketDown;
 				vo = i.UnPackFrom(b);
 			}

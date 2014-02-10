@@ -7,12 +7,12 @@ package
 	import flash.text.TextFieldType;
 	import flash.utils.Dictionary;
 	
-	import cmds.C10000Up;
+	
 	import cmds.C12000Down;
 	import cmds.C12000Up;
 	import cmds.C12001Down;
 	import cmds.C12001Up;
-	
+	import cmds.*;
 	import data.PlayerData;
 	
 	import net.flashpunk.FP;
@@ -59,6 +59,7 @@ package
 			s = CustomSocket.getInstance();
 			s.addCmdListener(12001,on_12001_Down);
 			s.addCmdListener(12000,on12000);
+			s.addCmdListener(12002,on12002);
 			startSocket();
 			
 		}
@@ -149,6 +150,9 @@ package
 		}
 		private function on12000(vo:C12000Down):void{
 			if(vo.Flag==1)trace("进入地图");
+		}
+		private function on12002(vo:C12002Down):void{
+			trace("玩家退出:"+vo.SID);
 		}
 		public static var point:Point = new Point;
 
