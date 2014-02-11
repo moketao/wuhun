@@ -15,6 +15,7 @@ package
 	import cmds.C12001Up;
 	import cmds.C12002Down;
 	
+	import data.ActionType;
 	import data.PlayerData;
 	
 	import net.flashpunk.FP;
@@ -33,9 +34,6 @@ package
 		private var mouseY:Number;
 		/**所有玩家*/
 		public static var PlayerDic:Dictionary = new Dictionary();
-		
-		/**玩家自己的数据*/
-		public var d:PlayerData = new PlayerData();
 		public function Game()
 		{
 			
@@ -66,28 +64,56 @@ package
 			startSocket();
 			
 		}
-		
+		private var lastAction:int;
+		private var lastDir:Number;
 		private function update(e:Event):void{
+			if(Input.check(Key.ENTER))checkForTextInput();
 			for each (var other:Splayer in PlayerDic) {
 				var d:PlayerData = other.d;
-				var dir:Number
+				var dir:Number;
 				if(other==me){
-					dir = checkNewDir();//运动方向
+					me.d.dir = dir = checkNewDir();//运动方向
 				}else{
 					dir = d.dir;
 				}
 				var speed:Number = getSpeed(d.action);//速度，todo，如果有偏差，则加大速度。
-				var targetPoint:Point = new Point(Math.sin(dir*Math.PI/180)*1000000,Math.sin(dir*Math.PI/180)*1000000);//极远的目标点
+				var targetPoint:Point = new Point(Math.cos(dir*Math.PI/180)*1000000,-Math.sin(dir*Math.PI/180)*1000000);//极远的目标点
 				if(speed>0){
-					FP.stepTowards(me,targetPoint.x,targetPoint.y,speed);//this向着dir这个目标点移动，速度为speed，可以优化stepTowards这个函数
-					send_12001_Up();
+					FP.stepTowards(other,targetPoint.x,targetPoint.y,speed);//this向着dir这个目标点移动，速度为speed，可以优化stepTowards这个函数
+				}
+				
+				if(other==me){
+					if(needSend12001(d)){
+						send_12001_Up();
+						lastAction = d.action;
+						lastDir = d.dir;
+					}
 				}
 			}
 			
 		}
+		
+		/**降低发送的Hz（如果方向不变，action不变）*/
+		private function needSend12001(d:PlayerData):Boolean{
+			if(lastAction!=d.action){
+				return true;
+			}
+			if(lastDir!=d.dir){
+				return true;
+			}
+			return false;
+		}
+		private var actionToSpeedDic:Dictionary;
+		private function getSpeed(action:int):Number{
+			if(actionToSpeedDic==null){
+				actionToSpeedDic = new Dictionary();
+				actionToSpeedDic[0] = 0;//站立速度0
+				actionToSpeedDic[1] = 8;//奔跑速度8
+			}
+			return actionToSpeedDic[action];//todo:考虑各种负面状态。
+		}
 		private function checkNewDir():Number
 		{
-			if(Input.check(Key.ENTER))checkForTextInput();
 			var hasPressDir:Boolean = false;
 			var h:int = 0;
 			var v:int = 0;
@@ -121,8 +147,12 @@ package
 					if(Input.check(Key.S))v = 100;
 				}		
 			}
-			
-			var p:Number =	Math.atan2(v,h)*180/Math.PI;//0~180或者0到-180
+			if(h!=0||v!=0){
+				me.d.action = ActionType.RUN;
+			}else{
+				me.d.action = ActionType.STAND;
+			}
+			var p:Number =	int(Math.atan2(-v,h)*180/Math.PI);//0~180或者0到-180
 			return p;
 		}
 		
@@ -170,28 +200,30 @@ package
 		/** 移动 **/
 		private function send_12001_Up():void{
 			var c3:C12001Up = new C12001Up();
-			c3.XX = me.x;
-			c3.ZZ = me.y;
+			c3.XX = me.d.XX;
+			c3.ZZ = me.d.ZZ;
 			c3.YY = 0;
+			c3.Dir = me.d.dir;
+			c3.Action = me.d.action;
 			s.sendMessage(12001, c3);
 		}
 		private function on_12001_Down(vo:C12001Down):void{
 			trace("=====================");
 			trace(vo.SID+"在移动");
-			trace(vo.XX);
-			trace(vo.ZZ);
-			trace(vo.YY);
 			var op:Splayer = PlayerDic[vo.SID]
-			if(op){
-				//如果存在，则利用XX和ZZ校准移动，在update或者onEnterFrame里面修正移动，而不是直接赋值
-				op.d.action = vo.Action;
-				op.d.dir = vo.Dir;
-			}else{
+			if(!op){
 				//不存在则创建
 				op = new Splayer();
+				op.d.SID = vo.SID;
 				addChild(op);
 				PlayerDic[vo.SID] = op;
 			}
+			//如果存在，则利用XX和ZZ校准移动，在update或者onEnterFrame里面修正移动，而不是直接赋值
+			op.d.action = vo.Action;
+			op.d.XX = vo.XX;
+			op.d.ZZ = vo.ZZ;
+			op.d.YY = vo.YY;
+			op.d.dir = vo.Dir;
 			//todo:删除服务器不再关注的op（OtherPlayer），根据距离和热度。
 		}	
 		private function onT(e:TouchEvent):void{
