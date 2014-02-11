@@ -7,12 +7,14 @@ package
 	import flash.text.TextFieldType;
 	import flash.utils.Dictionary;
 	
-	
+	import cmds.C10000Up;
+	import cmds.C11000Down;
 	import cmds.C12000Down;
 	import cmds.C12000Up;
 	import cmds.C12001Down;
 	import cmds.C12001Up;
-	import cmds.*;
+	import cmds.C12002Down;
+	
 	import data.PlayerData;
 	
 	import net.flashpunk.FP;
@@ -46,8 +48,8 @@ package
 			stage.addEventListener(TouchEvent.TOUCH,onT);
 			stage.addEventListener(Event.ENTER_FRAME,update);
 			
-			p = new Splayer();
-			addChild(p);
+			me = new Splayer();
+			addChild(me);
 			
 			inputTxt = new TextField();
 			inputTxt.width = 250;
@@ -60,27 +62,30 @@ package
 			s.addCmdListener(12001,on_12001_Down);
 			s.addCmdListener(12000,on12000);
 			s.addCmdListener(12002,on12002);
+			s.addCmdListener(11000,on11000);
 			startSocket();
 			
 		}
 		
 		private function update(e:Event):void{
-			var hasMove:Boolean = true;
-			var dir:Point = d.dir;//虚拟移动目标终点，这个值将来有可能是从服务端传过来的，用于异步移动误差处理
-			dir = checkPress(dir);
-			if(dir.x==0 && dir.y==0) hasMove=false;
-			if(hasMove){
-				d.speed = G.speed;
-				d.dir = dir;
-				move();
-			}else{
-				dir.x = 0;
-				dir.y = 0;
-				d.speed = 0;
+			for each (var other:Splayer in PlayerDic) {
+				var d:PlayerData = other.d;
+				var dir:Number
+				if(other==me){
+					dir = checkNewDir();//运动方向
+				}else{
+					dir = d.dir;
+				}
+				var speed:Number = getSpeed(d.action);//速度，todo，如果有偏差，则加大速度。
+				var targetPoint:Point = new Point(Math.sin(dir*Math.PI/180)*1000000,Math.sin(dir*Math.PI/180)*1000000);//极远的目标点
+				if(speed>0){
+					FP.stepTowards(me,targetPoint.x,targetPoint.y,speed);//this向着dir这个目标点移动，速度为speed，可以优化stepTowards这个函数
+					send_12001_Up();
+				}
 			}
 			
 		}
-		private function checkPress(dir:Point):Point
+		private function checkNewDir():Number
 		{
 			if(Input.check(Key.ENTER))checkForTextInput();
 			var hasPressDir:Boolean = false;
@@ -116,9 +121,9 @@ package
 					if(Input.check(Key.S))v = 100;
 				}		
 			}
-			dir.x = h;
-			dir.y = v;
-			return dir;
+			
+			var p:Number =	Math.atan2(v,h)*180/Math.PI;//0~180或者0到-180
+			return p;
 		}
 		
 		private function checkForTextInput():void{
@@ -141,12 +146,12 @@ package
 			var c1:C10000Up = new C10000Up();
 			c1.SID = inputTxt.text;
 			s.sendMessage(10000,c1);
+			PlayerDic[inputTxt.text]=me;
 			
 			//进入地图A
 			var c2:C12000Up = new C12000Up();
 			c2.MapName = "MapA";
 			s.sendMessage(12000, c2);
-			
 		}
 		private function on12000(vo:C12000Down):void{
 			if(vo.Flag==1)trace("进入地图");
@@ -154,33 +159,40 @@ package
 		private function on12002(vo:C12002Down):void{
 			trace("玩家退出:"+vo.SID);
 		}
+		private function on11000(vo:C11000Down):void{
+			trace("服务器主动推送消息:"+vo.Str);
+		}
 		public static var point:Point = new Point;
 
-		private var p:Splayer;
+		private var me:Splayer;
 
 		private var inputTxt:flash.text.TextField;
-		public function move():void{
-			var pdir:Point = d.dir;
-			var targetPoint:Point = new Point(p.x+pdir.x,p.y+pdir.y);//相对坐标的dir（玩家作为原点），转换成绝对的（世界0点作为原点）
-			var speed:Number = d.speed;
-			if(speed>0){
-				FP.stepTowards(p,targetPoint.x,targetPoint.y,speed);//this向着dir这个目标点移动，速度为speed
-				send_12001_Up();
-			}
-		}
 		/** 移动 **/
 		private function send_12001_Up():void{
 			var c3:C12001Up = new C12001Up();
-			c3.XX = p.x;
-			c3.ZZ = p.y;
+			c3.XX = me.x;
+			c3.ZZ = me.y;
 			c3.YY = 0;
 			s.sendMessage(12001, c3);
 		}
 		private function on_12001_Down(vo:C12001Down):void{
 			trace("=====================");
+			trace(vo.SID+"在移动");
 			trace(vo.XX);
 			trace(vo.ZZ);
 			trace(vo.YY);
+			var op:Splayer = PlayerDic[vo.SID]
+			if(op){
+				//如果存在，则利用XX和ZZ校准移动，在update或者onEnterFrame里面修正移动，而不是直接赋值
+				op.d.action = vo.Action;
+				op.d.dir = vo.Dir;
+			}else{
+				//不存在则创建
+				op = new Splayer();
+				addChild(op);
+				PlayerDic[vo.SID] = op;
+			}
+			//todo:删除服务器不再关注的op（OtherPlayer），根据距离和热度。
 		}	
 		private function onT(e:TouchEvent):void{
 			var touch:Touch = e.getTouch(stage);

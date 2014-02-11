@@ -27,6 +27,7 @@ package cmds {
 			_CMDDic[12000]=C12000Down;
 			_CMDDic[12001]=C12001Down;
 			_CMDDic[12002]=C12002Down;
+			_CMDDic[11000]=C11000Down;
 			//dicEnd
 		}
 

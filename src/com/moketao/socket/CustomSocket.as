@@ -137,7 +137,12 @@ package com.moketao.socket {
 			var vo:*;
 			if(b.bytesAvailable>0){
 				var ob:Object = CommandMap.getCmdOB(num);
-				if(!ob)return;
+				if(!ob){
+					b.position = 0;
+					b.traceBytes();
+					new Error("异常数据,有可能服务端未写入16位协议号，或协议号不存在");
+					return;
+				}
 				var i:ISocketDown = ob as ISocketDown;
 				vo = i.UnPackFrom(b);
 			}

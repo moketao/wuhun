@@ -4,6 +4,7 @@ package cmds{
 
 	/** 移动 **/
 	public class C12001Down implements ISocketDown{
+		public var SID:String; //String，移动玩家的SID
 		public var XX:Number;  //f32，横坐标
 		public var ZZ:Number;  //f32，纵坐标
 		public var YY:Number;  //f32，高度
@@ -13,6 +14,7 @@ package cmds{
 		/** 移动 **/
 		public function C12001Down(){}
 		public function UnPackFrom(b:CustomByteArray):*{
+			SID = b.readUTF();//String（移动玩家的SID）
 			XX = b.readFloat();//f32（横坐标）
 			ZZ = b.readFloat();//f32（纵坐标）
 			YY = b.readFloat();//f32（高度）
