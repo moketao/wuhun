@@ -11,7 +11,7 @@
 	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
 	import flash.utils.getTimer;
-
+	
 	import net.flashpunk.debug.Console;
 	import net.flashpunk.tweens.misc.Alarm;
 	import net.flashpunk.tweens.misc.MultiVarTween;
@@ -283,7 +283,7 @@
 		 * @param	y			Y position to step towards.
 		 * @param	distance	The distance to step (will not overshoot target).
 		 */
-		public static function stepTowards(object:Object, x:Number, y:Number, distance:Number = 1):void
+		public static function stepTowards(object:Object, x:Number, y:Number, distance:Number = 1):Point
 		{
 			point.x = x - object.x;
 			point.y = y - object.y;
@@ -291,11 +291,12 @@
 			{
 				object.x = x;
 				object.y = y;
-				return;
+				return new Point(x,y);
 			}
 			point.normalize(distance);
 			object.x += point.x;
 			object.y += point.y;
+			return new Point(object.x,object.y);
 		}
 		
 		/**

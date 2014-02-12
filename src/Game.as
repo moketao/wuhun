@@ -36,7 +36,6 @@ package
 		public static var PlayerDic:Dictionary = new Dictionary();
 		public function Game()
 		{
-			
 			addEventListener(Event.ADDED_TO_STAGE,onAdd);
 		}
 		
@@ -62,10 +61,7 @@ package
 			s.addCmdListener(12002,on12002);
 			s.addCmdListener(11000,on11000);
 			startSocket();
-			
 		}
-		private var lastAction:int;
-		private var lastDir:Number;
 		private function update(e:Event):void{
 			if(Input.check(Key.ENTER))checkForTextInput();
 			for each (var other:Splayer in PlayerDic) {
@@ -76,33 +72,69 @@ package
 				}else{
 					dir = d.dir;
 				}
-				var speed:Number = getSpeed(d.action);//速度，todo，如果有偏差，则加大速度。
-				var targetPoint:Point = new Point(Math.cos(dir*Math.PI/180)*1000000,-Math.sin(dir*Math.PI/180)*1000000);//极远的目标点
-				if(speed>0){
-					FP.stepTowards(other,targetPoint.x,targetPoint.y,speed);//this向着dir这个目标点移动，速度为speed，可以优化stepTowards这个函数
-				}
+				var speed:Number = getSpeed(d.action);
 				
+				if(speed>0){
+					var targetPoint:Point = new Point(Math.cos(dir*Math.PI/180)*1000000,-Math.sin(dir*Math.PI/180)*1000000);//极远的目标点
+					if(speed>0){
+						FP.stepTowards(other,targetPoint.x,targetPoint.y,speed);//this向着dir这个目标点移动，速度为speed，可以优化stepTowards这个函数
+					}
+				}
 				if(other==me){
-					if(needSend12001(d)){
+					if(needSend12001_about_me(d)){
 						send_12001_Up();
-						lastAction = d.action;
-						lastDir = d.dir;
+					}
+				}else{
+					if(needSendfix_about_other(other,d)){
+						fix(other,d);//其他玩家，距离如果有偏差，则修正。
 					}
 				}
 			}
-			
 		}
-		
-		/**降低发送的Hz（如果方向不变，action不变）*/
-		private function needSend12001(d:PlayerData):Boolean{
-			if(lastAction!=d.action){
-				return true;
+		private function fix(other:Splayer, d:PlayerData):void
+		{
+			point.x = d.fixX;
+			point.y = d.fixZ;
+			FP.stepTowards(other,other.x+d.fixX,other.y+d.fixZ,point.length*0.333);//每次接近33.3%
+			d.fixX *= 0.666;
+			d.fixZ *= 0.666;
+		}
+		/**降低发送的Hz（如果方向不变，action不变）针对 other*/
+		private function needSendfix_about_other(other:Splayer,d:PlayerData):Boolean{
+			var need:Boolean = false;
+			if(d.flag==1){//other要求
+				d.flag = 0;
+				need = true;
 			}
-			if(lastDir!=d.dir){
-				return true;
+			point.x = d.fixX;
+			point.y = d.fixZ;
+			if(point.length>2){//还需要修正两个像素以上
+				d.flag = 0;
+				need = true;
+			}
+			if(need){
+				return need;
 			}
 			return false;
 		}
+		/**降低发送的Hz（如果方向不变，action不变）针对 me*/
+		private function needSend12001_about_me(d:PlayerData):Boolean{
+			var need:Boolean = false;
+			if(d.lastAction!=d.action){
+				d.lastAction = d.action;
+				need = true;
+			}
+			if(d.lastDir!=d.dir){
+				d.lastDir = d.dir;
+				need = true;
+			}
+			if(need){
+				return need;
+			}
+			return need;
+		}
+
+		
 		private var actionToSpeedDic:Dictionary;
 		private function getSpeed(action:int):Number{
 			if(actionToSpeedDic==null){
@@ -200,21 +232,22 @@ package
 		/** 移动 **/
 		private function send_12001_Up():void{
 			var c3:C12001Up = new C12001Up();
-			c3.XX = me.d.XX;
-			c3.ZZ = me.d.ZZ;
+			c3.XX = me.x;
+			c3.ZZ = me.y;
 			c3.YY = 0;
 			c3.Dir = me.d.dir;
 			c3.Action = me.d.action;
 			s.sendMessage(12001, c3);
 		}
 		private function on_12001_Down(vo:C12001Down):void{
-			trace("=====================");
-			trace(vo.SID+"在移动");
+			//trace(vo.SID+"在移动");
 			var op:Splayer = PlayerDic[vo.SID]
 			if(!op){
 				//不存在则创建
 				op = new Splayer();
 				op.d.SID = vo.SID;
+				op.x = vo.XX;
+				op.y = vo.ZZ;
 				addChild(op);
 				PlayerDic[vo.SID] = op;
 			}
@@ -224,6 +257,10 @@ package
 			op.d.ZZ = vo.ZZ;
 			op.d.YY = vo.YY;
 			op.d.dir = vo.Dir;
+			op.d.flag = 1;
+			//记录差距，以后每帧修正一部分
+			op.d.fixX = op.d.XX-op.x;
+			op.d.fixZ = op.d.ZZ-op.y;
 			//todo:删除服务器不再关注的op（OtherPlayer），根据距离和热度。
 		}	
 		private function onT(e:TouchEvent):void{

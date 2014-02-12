@@ -1,5 +1,7 @@
 package
 {
+	import flash.text.engine.JustificationStyle;
+	
 	import data.PlayerData;
 	
 	import starling.display.Image;
@@ -12,8 +14,9 @@ package
 		public var d:PlayerData = new PlayerData();
 		public function Splayer()
 		{
-			var texture:Texture = Texture.fromBitmap(new PLAYER());
+			var texture:Texture = Texture.fromBitmap(new PLAYER(),false);
 			super(texture);
+			this.readjustSize();
 		}
 	}
 }
