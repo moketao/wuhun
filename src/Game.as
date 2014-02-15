@@ -48,16 +48,22 @@ package
 		private static const SQUARE_SIZE:Number = 50;
 		private static const PAD_SIZE:Number = 20;
 		private function onAdd(e:Event):void{
+			
+			//细碎小事
 			var isHW:Boolean = Starling.context.driverInfo.toLowerCase().indexOf("software") == -1;
 			trace("isHW Render:",isHW)
 			Starling.current.showStats = true;
 			stage.addEventListener(TouchEvent.TOUCH,onT);
-			stage.addEventListener(Event.ENTER_FRAME,update);
+			stage.addEventListener(Event.ENTER_FRAME,enterFrame);
 			
+			
+			//四叉树
 			_worldBounds = new Rectangle(0,0, WORLD_BOUND_X, WORLD_BOUND_Y);
 			_quadtreeSprite = new QuadtreeSprite(_worldBounds, true);
 			addChild(_quadtreeSprite);
 			
+			
+			//四叉树地图内部的【物体】
 			for (var i:int = 0; i < 1000; ++i)
 			{
 				var square:Quad = new Quad(SQUARE_SIZE, SQUARE_SIZE, randomColor());
@@ -68,9 +74,12 @@ package
 			}
 			
 			
+			//四叉树地图内部的【玩家】
 			me = new Splayer();
 			_quadtreeSprite.addChild(me);
 			
+			
+			//由于Starling不支持输入文本，所以下面这个是传统TXT，用于输入文本	//todo：不用时隐藏
 			inputTxt = new TextField();
 			inputTxt.width = 250;
 			inputTxt.height = 50;
@@ -78,6 +87,8 @@ package
 			inputTxt.text = "输入你的名字";
 			Starling.current.nativeOverlay.addChild(inputTxt);
 			
+			
+			//网络
 			s = CustomSocket.getInstance();
 			s.addCmdListener(12001,on_12001_Down);
 			s.addCmdListener(12000,on12000);
@@ -95,7 +106,9 @@ package
 			return new Point (rectangle.x + rectangle.width * Math.random(),
 				rectangle.y + rectangle.height * Math.random());
 		}
-		private function update(e:EnterFrameEvent):void{
+		
+		/** 主循环，每帧运行 	//todo：优化，渲染压力高时，主动降帧 ，并使用e.passedTime来处理移动距离 **/
+		private function enterFrame(e:EnterFrameEvent):void{
 			if(Input.check(Key.ENTER))checkForTextInput();
 			for each (var other:Splayer in PlayerDic) {
 				var d:PlayerData = other.d;
@@ -116,8 +129,8 @@ package
 					}
 					
 					//限制，不要超出地图
-					other.x = FP.clamp(other.x,0+20,WORLD_BOUND_X-20);
-					other.y = FP.clamp(other.y,0+20,WORLD_BOUND_Y-20);
+					other.x = FP.clamp(other.x,0+PAD_SIZE,WORLD_BOUND_X-PAD_SIZE);
+					other.y = FP.clamp(other.y,0+PAD_SIZE,WORLD_BOUND_Y-PAD_SIZE);
 					
 					_quadtreeSprite.updateChild(other);//更新四叉树
 				}
@@ -136,28 +149,24 @@ package
 		
 		private var cameraPos:Point = new Point;
 		private function cameraFollow(e:EnterFrameEvent):void{
-			//_quadtreeSprite.x += _velocityX * e.passedTime;
-			//_quadtreeSprite.y += _velocityY * e.passedTime;
+			//_quadtreeSprite.x += _velocityX * e.passedTime; //todo:使用时间，消除误差
+			//_quadtreeSprite.y += _velocityY * e.passedTime; //todo:使用时间，消除误差
 			
-			// make camera follow the player
-			FP.point.x = cameraPos.x - me.x;
-			FP.point.y = cameraPos.y - me.y;
+			//纯抽象摄像机，原理是反向横移地图。距离视图中间较远时激活次操作
+			FP.point.x = (WORLD_BOUND_X - me.x)>>1;
+			FP.point.y = (WORLD_BOUND_Y - me.y)>>1;
 			var dist:Number = FP.point.length;
 			if (dist > FOLLOW_TRAIL) dist = FOLLOW_TRAIL;
 			FP.point.normalize(dist * FOLLOW_RATE);
 			cameraPos.x = me.x + FP.point.x-this.stage.stageWidth/2;
 			cameraPos.y = me.y + FP.point.y-this.stage.stageHeight/2;
 
-			//cameraPos.x = FP.clamp(cameraPos.x, 0, WORLD_BOUND * 2 - this.stage.stageWidth);
-			//cameraPos.y = FP.clamp(cameraPos.y, 0, WORLD_BOUND * 2 - this.stage.stageHeight);
-			//trace(cameraPos);
-			_quadtreeSprite.x = -cameraPos.x;
-			_quadtreeSprite.y = -cameraPos.y;
+			_quadtreeSprite.x = -cameraPos.x;//反向横移
+			_quadtreeSprite.y = -cameraPos.y;//原理同上
 			
-			// Limit to world bounds
+			//限制摄像机（实际是限制地图反向横移坐标）
 			//_quadtreeSprite.x = Math.min(Math.max(_worldBounds.left + this.stage.stageWidth, _quadtreeSprite.x), _worldBounds.right);
 			//_quadtreeSprite.y = Math.min(Math.max(_worldBounds.top + this.stage.stageHeight, _quadtreeSprite.y), _worldBounds.bottom);
-			
 			
 			var newViewPort:Rectangle = _quadtreeSprite.visibleViewport.clone();
 			newViewPort.x = -_quadtreeSprite.x;
@@ -173,6 +182,7 @@ package
 			d.fixX *= 0.666;
 			d.fixZ *= 0.666;
 		}
+		
 		/**降低发送的Hz（如果方向不变，action不变）针对 other*/
 		private function needSendfix_about_other(other:Splayer,d:PlayerData):Boolean{
 			var need:Boolean = false;
@@ -191,6 +201,7 @@ package
 			}
 			return false;
 		}
+		
 		/**降低发送的Hz（如果方向不变，action不变）针对 me*/
 		private function needSend12001_about_me(d:PlayerData):Boolean{
 			var need:Boolean = false;
