@@ -24,6 +24,7 @@ package
 	import net.flashpunk.utils.Key;
 	
 	import starling.core.Starling;
+	import starling.display.BlendMode;
 	import starling.display.Quad;
 	import starling.display.Sprite;
 	import starling.events.EnterFrameEvent;
@@ -46,7 +47,7 @@ package
 		private var _quadtreeSprite:QuadtreeSprite;
 		private var _worldBounds:Rectangle;
 		private static const SQUARE_SIZE:Number = 50;
-		private static const PAD_SIZE:Number = 20;
+		private static const PAD_SIZE:Number = 100;
 		private function onAdd(e:Event):void{
 			
 			//细碎小事
@@ -59,7 +60,9 @@ package
 			
 			//四叉树
 			_worldBounds = new Rectangle(0,0, WORLD_BOUND_X, WORLD_BOUND_Y);
-			_quadtreeSprite = new QuadtreeSprite(_worldBounds, true);
+			_quadtreeSprite = new QuadtreeSprite(_worldBounds, new Rectangle(0,0,this.stage.stageWidth+PAD_SIZE*2,this.stage.stageHeight+PAD_SIZE*2),true);
+			_quadtreeSprite.touchable = false;
+			//_quadtreeSprite.blendMode = BlendMode.NONE;//只对大背景使用，省去 alpha 晕死
 			addChild(_quadtreeSprite);
 			
 			
@@ -74,15 +77,18 @@ package
 			}
 			
 			
-			//四叉树地图内部的【玩家】
+			//四叉树地图内部的【玩家】，其他玩家将在 Socket 连通后添加。
 			me = new Splayer();
+			me.x = 100;
+			me.y = 100;
 			_quadtreeSprite.addChild(me);
 			
 			
-			//由于Starling不支持输入文本，所以下面这个是传统TXT，用于输入文本	//todo：不用时隐藏
+			//登录时需要输入名字，由于Starling不支持输入文本，所以下面这个是传统TXT，用于输入文本	//todo：不用时隐藏
 			inputTxt = new TextField();
 			inputTxt.width = 250;
 			inputTxt.height = 50;
+			inputTxt.y = 40;
 			inputTxt.type = TextFieldType.INPUT;
 			inputTxt.text = "输入你的名字";
 			Starling.current.nativeOverlay.addChild(inputTxt);
@@ -129,10 +135,10 @@ package
 					}
 					
 					//限制，不要超出地图
-					other.x = FP.clamp(other.x,0+PAD_SIZE,WORLD_BOUND_X-PAD_SIZE);
-					other.y = FP.clamp(other.y,0+PAD_SIZE,WORLD_BOUND_Y-PAD_SIZE);
+					other.x = FP.clamp(other.x,PAD_SIZE,WORLD_BOUND_X-PAD_SIZE);
+					other.y = FP.clamp(other.y,PAD_SIZE,WORLD_BOUND_Y-PAD_SIZE);
 					
-					_quadtreeSprite.updateChild(other);//更新四叉树
+					if(count%26==0)_quadtreeSprite.updateChild(other);//更新四叉树//26帧更新一次，否则性能消耗太大
 				}
 				if(isME){
 					if(needSend12001_about_me(d)){
@@ -149,31 +155,29 @@ package
 		
 		private var cameraPos:Point = new Point;
 		private function cameraFollow(e:EnterFrameEvent):void{
+			
 			//_quadtreeSprite.x += _velocityX * e.passedTime; //todo:使用时间，消除误差
 			//_quadtreeSprite.y += _velocityY * e.passedTime; //todo:使用时间，消除误差
 			
 			//纯抽象摄像机，原理是反向横移地图。距离视图中间较远时激活次操作
-			FP.point.x = (WORLD_BOUND_X - me.x)>>1;
-			FP.point.y = (WORLD_BOUND_Y - me.y)>>1;
-			var dist:Number = FP.point.length;
-			if (dist > FOLLOW_TRAIL) dist = FOLLOW_TRAIL;
-			FP.point.normalize(dist * FOLLOW_RATE);
-			cameraPos.x = me.x + FP.point.x-this.stage.stageWidth/2;
-			cameraPos.y = me.y + FP.point.y-this.stage.stageHeight/2;
-
-			_quadtreeSprite.x = -cameraPos.x;//反向横移
-			_quadtreeSprite.y = -cameraPos.y;//原理同上
+			cameraPos.x = me.x -this.stage.stageWidth/2;
+			cameraPos.y = me.y -this.stage.stageHeight/2;
 			
 			//限制摄像机（实际是限制地图反向横移坐标）
-			//_quadtreeSprite.x = Math.min(Math.max(_worldBounds.left + this.stage.stageWidth, _quadtreeSprite.x), _worldBounds.right);
-			//_quadtreeSprite.y = Math.min(Math.max(_worldBounds.top + this.stage.stageHeight, _quadtreeSprite.y), _worldBounds.bottom);
-			
-			var newViewPort:Rectangle = _quadtreeSprite.visibleViewport.clone();
-			newViewPort.x = -_quadtreeSprite.x;
-			newViewPort.y = -_quadtreeSprite.y;
-			
-			_quadtreeSprite.visibleViewport = newViewPort;
+			cameraPos.x = FP.clamp(cameraPos.x,0,WORLD_BOUND_X-this.stage.stageWidth);
+			cameraPos.y = FP.clamp(cameraPos.y,0,WORLD_BOUND_Y-this.stage.stageHeight);
+
+			_quadtreeSprite.x = -int(cameraPos.x);//反向横移
+			_quadtreeSprite.y = -int(cameraPos.y);//原理同上
+
+			if(++count%28==0){
+				var newViewPort:Rectangle = _quadtreeSprite.visibleViewport.clone();
+				newViewPort.x = Math.abs(_quadtreeSprite.x)-PAD_SIZE;	//向外扩展更新范围
+				newViewPort.y = Math.abs(_quadtreeSprite.y)-PAD_SIZE;	//同上
+				_quadtreeSprite.visibleViewport = newViewPort;//28帧更新一次，否则 CPU 会爆掉。
+			}
 		}
+		private var count:int;
 		private function fix(other:Splayer, d:PlayerData):void
 		{
 			point.x = d.fixX;
@@ -186,7 +190,8 @@ package
 		/**降低发送的Hz（如果方向不变，action不变）针对 other*/
 		private function needSendfix_about_other(other:Splayer,d:PlayerData):Boolean{
 			var need:Boolean = false;
-			if(d.flag==1){//other要求
+			if(d.flag==1){
+				//flag值为1时，代表 other要求周围玩家进行更新（包括me）
 				d.flag = 0;
 				need = true;
 			}

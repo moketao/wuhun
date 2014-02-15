@@ -15,6 +15,8 @@ package
 			var texture:Texture = Texture.fromBitmap(new PLAYER(),false);
 			super(texture);
 			this.readjustSize();
+			this.pivotX = 10;
+			this.pivotY = 15;
 		}
 	}
 }

@@ -1,15 +1,13 @@
 package starling.extensions
 {
-    import flash.utils.Dictionary;
-
-    import starling.extensions.quadtree.Quadtree;
-
     import flash.geom.Rectangle;
-
+    import flash.utils.Dictionary;
+    
     import starling.core.RenderSupport;
     import starling.display.DisplayObject;
     import starling.display.Sprite;
     import starling.events.Event;
+    import starling.extensions.quadtree.Quadtree;
 
     public class QuadtreeSprite extends Sprite
     {
@@ -21,16 +19,20 @@ package starling.extensions
 
         private var _dirty:Boolean;
 
-        public function QuadtreeSprite(worldSpace:Rectangle, maintainOrder:Boolean = false)
+        public function QuadtreeSprite(worldSpace:Rectangle,viewportSize:Rectangle, maintainOrder:Boolean = false)
         {
             _quadtree = new Quadtree(worldSpace.left, worldSpace.top, worldSpace.right, worldSpace.bottom);
-            _viewport = worldSpace.clone();
+            _viewport = viewportSize.clone();
             _children = new Vector.<DisplayObject>();
 
             if (maintainOrder) _childrenPositions = new Dictionary();
 
-            _dirty = true;
+            dirty = true;
         }
+
+		public function set dirty(value:Boolean):void{
+			_dirty = value;
+		}
 
         override public function render(support:RenderSupport, parentAlpha:Number):void
         {
@@ -44,7 +46,7 @@ package starling.extensions
             // Solves the problem of updating a child multiple times per frame.
 
             _quadtree.update(child, child.bounds);
-            _dirty = true;
+            dirty = true;
         }
 
         override public function addChild(child:DisplayObject):DisplayObject
@@ -76,7 +78,7 @@ package starling.extensions
             _quadtree.insert(child, child.bounds);
 
             // TODO Can this be removed?
-            _dirty = true;
+            dirty = true;
 
             return child;
         }
@@ -110,9 +112,9 @@ package starling.extensions
         {
             if (!_dirty) return;
 
-            _dirty = false;
+            dirty = false;
 
-            this.removeChildren();
+            this.removeChildren();//这里需要优化，没有必要移除所有对象，否则会有严重性能问题
 
             var visibleObjects:Vector.<Object> = _quadtree.objectsInRectangle(_viewport);
 
@@ -143,7 +145,7 @@ package starling.extensions
             if (viewport.equals(_viewport)) return;
 
             _viewport = viewport.clone();
-            _dirty = true;
+            dirty = true;//不需要每帧都变动这个，否则需要重绘很多次
         }
 
         public function get dirty():Boolean
@@ -153,7 +155,7 @@ package starling.extensions
 
         public function invalidate():void
         {
-            _dirty = true;
+            dirty = true;
         }
 
     }
