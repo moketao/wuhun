@@ -3,6 +3,7 @@ package
 	import com.moketao.socket.CustomSocket;
 	
 	import flash.geom.Point;
+	import flash.geom.Rectangle;
 	import flash.text.TextField;
 	import flash.text.TextFieldType;
 	import flash.utils.Dictionary;
@@ -23,10 +24,14 @@ package
 	import net.flashpunk.utils.Key;
 	
 	import starling.core.Starling;
+	import starling.display.Quad;
 	import starling.display.Sprite;
+	import starling.events.EnterFrameEvent;
 	import starling.events.Event;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
+	import starling.extensions.QuadtreeSprite;
+	import starling.utils.Color;
 	
 	public class Game extends Sprite
 	{
@@ -38,15 +43,33 @@ package
 		{
 			addEventListener(Event.ADDED_TO_STAGE,onAdd);
 		}
-		
+		private var _quadtreeSprite:QuadtreeSprite;
+		private var _worldBounds:Rectangle;
+		private static const SQUARE_SIZE:Number = 50;
+		private static const PAD_SIZE:Number = 20;
 		private function onAdd(e:Event):void{
 			var isHW:Boolean = Starling.context.driverInfo.toLowerCase().indexOf("software") == -1;
 			trace("isHW Render:",isHW)
+			Starling.current.showStats = true;
 			stage.addEventListener(TouchEvent.TOUCH,onT);
 			stage.addEventListener(Event.ENTER_FRAME,update);
 			
+			_worldBounds = new Rectangle(0,0, WORLD_BOUND_X, WORLD_BOUND_Y);
+			_quadtreeSprite = new QuadtreeSprite(_worldBounds, true);
+			addChild(_quadtreeSprite);
+			
+			for (var i:int = 0; i < 1000; ++i)
+			{
+				var square:Quad = new Quad(SQUARE_SIZE, SQUARE_SIZE, randomColor());
+				var randomPosition:Point = randomPointInRectangle(_worldBounds);
+				square.x = randomPosition.x;
+				square.y = randomPosition.y;
+				_quadtreeSprite.addChild(square);
+			}
+			
+			
 			me = new Splayer();
-			addChild(me);
+			_quadtreeSprite.addChild(me);
 			
 			inputTxt = new TextField();
 			inputTxt.width = 250;
@@ -62,12 +85,24 @@ package
 			s.addCmdListener(11000,on11000);
 			startSocket();
 		}
-		private function update(e:Event):void{
+		
+		private function randomColor():uint
+		{
+			return Color.rgb(Math.random() * 255, Math.random() * 255, Math.random() * 255);
+		}
+		private function randomPointInRectangle(rectangle:Rectangle):Point
+		{
+			return new Point (rectangle.x + rectangle.width * Math.random(),
+				rectangle.y + rectangle.height * Math.random());
+		}
+		private function update(e:EnterFrameEvent):void{
 			if(Input.check(Key.ENTER))checkForTextInput();
 			for each (var other:Splayer in PlayerDic) {
 				var d:PlayerData = other.d;
 				var dir:Number;
+				var isME:Boolean;
 				if(other==me){
+					isME = true;
 					me.d.dir = dir = checkNewDir();//运动方向
 				}else{
 					dir = d.dir;
@@ -77,10 +112,16 @@ package
 				if(speed>0){
 					var targetPoint:Point = new Point(Math.cos(dir*Math.PI/180)*1000000,-Math.sin(dir*Math.PI/180)*1000000);//极远的目标点
 					if(speed>0){
-						FP.stepTowards(other,targetPoint.x,targetPoint.y,speed);//this向着dir这个目标点移动，速度为speed，可以优化stepTowards这个函数
+						FP.stepTowards(other,targetPoint.x,targetPoint.y,speed);//向着dir这个目标点移动，速度为speed，可以优化stepTowards这个函数
 					}
+					
+					//限制，不要超出地图
+					other.x = FP.clamp(other.x,0+20,WORLD_BOUND_X-20);
+					other.y = FP.clamp(other.y,0+20,WORLD_BOUND_Y-20);
+					
+					_quadtreeSprite.updateChild(other);//更新四叉树
 				}
-				if(other==me){
+				if(isME){
 					if(needSend12001_about_me(d)){
 						send_12001_Up();
 					}
@@ -90,6 +131,39 @@ package
 					}
 				}
 			}
+			cameraFollow(e);
+		}
+		
+		private var cameraPos:Point = new Point;
+		private function cameraFollow(e:EnterFrameEvent):void{
+			//_quadtreeSprite.x += _velocityX * e.passedTime;
+			//_quadtreeSprite.y += _velocityY * e.passedTime;
+			
+			// make camera follow the player
+			FP.point.x = cameraPos.x - me.x;
+			FP.point.y = cameraPos.y - me.y;
+			var dist:Number = FP.point.length;
+			if (dist > FOLLOW_TRAIL) dist = FOLLOW_TRAIL;
+			FP.point.normalize(dist * FOLLOW_RATE);
+			cameraPos.x = me.x + FP.point.x-this.stage.stageWidth/2;
+			cameraPos.y = me.y + FP.point.y-this.stage.stageHeight/2;
+
+			//cameraPos.x = FP.clamp(cameraPos.x, 0, WORLD_BOUND * 2 - this.stage.stageWidth);
+			//cameraPos.y = FP.clamp(cameraPos.y, 0, WORLD_BOUND * 2 - this.stage.stageHeight);
+			//trace(cameraPos);
+			_quadtreeSprite.x = -cameraPos.x;
+			_quadtreeSprite.y = -cameraPos.y;
+			
+			// Limit to world bounds
+			//_quadtreeSprite.x = Math.min(Math.max(_worldBounds.left + this.stage.stageWidth, _quadtreeSprite.x), _worldBounds.right);
+			//_quadtreeSprite.y = Math.min(Math.max(_worldBounds.top + this.stage.stageHeight, _quadtreeSprite.y), _worldBounds.bottom);
+			
+			
+			var newViewPort:Rectangle = _quadtreeSprite.visibleViewport.clone();
+			newViewPort.x = -_quadtreeSprite.x;
+			newViewPort.y = -_quadtreeSprite.y;
+			
+			_quadtreeSprite.visibleViewport = newViewPort;
 		}
 		private function fix(other:Splayer, d:PlayerData):void
 		{
@@ -108,7 +182,7 @@ package
 			}
 			point.x = d.fixX;
 			point.y = d.fixZ;
-			if(point.length>2){//还需要修正两个像素以上
+			if(point.length>3){//还需要修正3个像素以上
 				d.flag = 0;
 				need = true;
 			}
@@ -229,6 +303,10 @@ package
 		private var me:Splayer;
 
 		private var inputTxt:flash.text.TextField;
+		private var WORLD_BOUND_X:Number = 2000;
+		private var WORLD_BOUND_Y:Number = 1000;
+		private var FOLLOW_RATE:Number = 0.1;
+		private var FOLLOW_TRAIL:Number = 50;
 		/** 移动 **/
 		private function send_12001_Up():void{
 			var c3:C12001Up = new C12001Up();
@@ -248,7 +326,7 @@ package
 				op.d.SID = vo.SID;
 				op.x = vo.XX;
 				op.y = vo.ZZ;
-				addChild(op);
+				_quadtreeSprite.addChild(op);
 				PlayerDic[vo.SID] = op;
 			}
 			//如果存在，则利用XX和ZZ校准移动，在update或者onEnterFrame里面修正移动，而不是直接赋值

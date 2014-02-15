@@ -1,7 +1,5 @@
 package
 {
-	import flash.text.engine.JustificationStyle;
-	
 	import data.PlayerData;
 	
 	import starling.display.Image;

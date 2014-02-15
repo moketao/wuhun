@@ -697,7 +697,9 @@ package starling.display
         
         /** The visibility of the object. An invisible object will be untouchable. */
         public function get visible():Boolean { return mVisible; }
-        public function set visible(value:Boolean):void { mVisible = value; }
+        public function set visible(value:Boolean):void { 
+			mVisible = value; 
+		}
         
         /** Indicates if this object (and its children) will receive touch events. */
         public function get touchable():Boolean { return mTouchable; }
