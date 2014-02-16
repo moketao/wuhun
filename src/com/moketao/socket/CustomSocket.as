@@ -7,6 +7,7 @@ package com.moketao.socket {
 	import flash.events.SecurityErrorEvent;
 	import flash.external.ExternalInterface;
 	import flash.net.Socket;
+	import flash.utils.ByteArray;
 	
 	import cmds.CommandMap;
 
@@ -176,7 +177,9 @@ package com.moketao.socket {
 
 		private function connectHandler(event:Event):void {
 			retryTimes=0;
+			trace("成功连接服务器："+ip+"，准备发送第一个包");
 			firstPack=true;
+			sendMessage(1);//第一个包
 		}
 
 		/**
@@ -273,7 +276,7 @@ package com.moketao.socket {
 
 			//装包 
 			var sendBytes:CustomByteArray=new CustomByteArray();
-			if (firstPack && ip != "127.0.0.1") {
+			if (firstPack) {
 				addTgwHead(sendBytes) //第一个包，加tgw包头，服务端将丢弃第一个包
 			}
 			sendBytes.writeShort(dataBytes.length + 2); //包总长=数据长度+协议16长度（一个16位无符号正整数）

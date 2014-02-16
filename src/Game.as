@@ -24,7 +24,6 @@ package
 	import net.flashpunk.utils.Key;
 	
 	import starling.core.Starling;
-	import starling.display.BlendMode;
 	import starling.display.Quad;
 	import starling.display.Sprite;
 	import starling.events.EnterFrameEvent;
@@ -79,18 +78,18 @@ package
 			
 			//四叉树地图内部的【玩家】，其他玩家将在 Socket 连通后添加。
 			me = new Splayer();
-			me.x = 100;
-			me.y = 100;
+			me.x = 180;
+			me.y = 150;
 			_quadtreeSprite.addChild(me);
 			
 			
 			//登录时需要输入名字，由于Starling不支持输入文本，所以下面这个是传统TXT，用于输入文本	//todo：不用时隐藏
 			inputTxt = new TextField();
-			inputTxt.width = 250;
+			inputTxt.width = 550;
 			inputTxt.height = 50;
 			inputTxt.y = 40;
 			inputTxt.type = TextFieldType.INPUT;
-			inputTxt.text = "输入你的名字";
+			inputTxt.text = "删除这行文字，再输入你的名字，然后按回车，即可使用【A】【S】【D】【W】控制角色";
 			Starling.current.nativeOverlay.addChild(inputTxt);
 			
 			
@@ -286,11 +285,13 @@ package
 			}
 		}
 		public function startSocket():void {
-			//s.start("s1.app888888.qqopenapp.com",8000);
-			if (s.connected)
+			if (s.connected){
+				trace("已连接，先断开");
 				s.close();
-			s.start("127.0.0.1", 8000);
-			trace("重新连接");
+			}
+			s.start("app1101135929.qzone.qzoneapp.com",8000);
+			//s.start("127.0.0.1", 8000);
+			trace("正在连接");
 		}
 		public var s:CustomSocket;
 		private function login():void{
