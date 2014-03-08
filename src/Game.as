@@ -78,6 +78,7 @@ package
 			
 			//四叉树地图内部的【玩家】，其他玩家将在 Socket 连通后添加。
 			me = new Splayer();
+			me.isME = true;
 			me.x = 180;
 			me.y = 150;
 			_quadtreeSprite.addChild(me);
@@ -115,17 +116,17 @@ package
 		/** 主循环，每帧运行 	//todo：优化，渲染压力高时，主动降帧 ，并使用e.passedTime来处理移动距离 **/
 		private function enterFrame(e:EnterFrameEvent):void{
 			if(Input.check(Key.ENTER))checkForTextInput();
+			
 			for each (var other:Splayer in PlayerDic) {
 				var d:PlayerData = other.d;
 				var dir:Number;
-				var isME:Boolean;
-				if(other==me){
-					isME = true;
+				if(other.isME){
 					me.d.dir = dir = checkNewDir();//运动方向
 				}else{
 					dir = d.dir;
 				}
 				var speed:Number = getSpeed(d.action);
+				other.actionBySpeed(speed,dir);
 				
 				if(speed>0){
 					var targetPoint:Point = new Point(Math.cos(dir*Math.PI/180)*1000000,-Math.sin(dir*Math.PI/180)*1000000);//极远的目标点
@@ -136,10 +137,10 @@ package
 					//限制，不要超出地图
 					other.x = FP.clamp(other.x,PAD_SIZE,WORLD_BOUND_X-PAD_SIZE);
 					other.y = FP.clamp(other.y,PAD_SIZE,WORLD_BOUND_Y-PAD_SIZE);
-					
+					count
 					if(count%26==0)_quadtreeSprite.updateChild(other);//更新四叉树//26帧更新一次，否则性能消耗太大
 				}
-				if(isME){
+				if(other.isME){
 					if(needSend12001_about_me(d)){
 						send_12001_Up();
 					}
@@ -148,7 +149,13 @@ package
 						fix(other,d);//其他玩家，距离如果有偏差，则修正。
 					}
 				}
+				
 			}
+			if(count%26==0){
+				var sort_arr:Array = [];
+				
+			}
+			
 			cameraFollow(e);
 		}
 		
@@ -166,8 +173,8 @@ package
 			cameraPos.x = FP.clamp(cameraPos.x,0,WORLD_BOUND_X-this.stage.stageWidth);
 			cameraPos.y = FP.clamp(cameraPos.y,0,WORLD_BOUND_Y-this.stage.stageHeight);
 
-			_quadtreeSprite.x = -int(cameraPos.x);//反向横移
-			_quadtreeSprite.y = -int(cameraPos.y);//原理同上
+			_quadtreeSprite.x = -cameraPos.x;//反向横移
+			_quadtreeSprite.y = -cameraPos.y;//原理同上
 
 			if(++count%28==0){
 				var newViewPort:Rectangle = _quadtreeSprite.visibleViewport.clone();
@@ -272,8 +279,9 @@ package
 				me.d.action = ActionType.RUN;
 			}else{
 				me.d.action = ActionType.STAND;
+				return me.d.dir;
 			}
-			var p:Number =	int(Math.atan2(-v,h)*180/Math.PI);//0~180或者0到-180
+			var p:Number =	Math.atan2(-v,h)*180/Math.PI;//0~180或者0到-180
 			return p;
 		}
 		
@@ -289,8 +297,11 @@ package
 				trace("已连接，先断开");
 				s.close();
 			}
-			s.start("app1101135929.qzone.qzoneapp.com",8000);
-			//s.start("127.0.0.1", 8000);
+			if(G.IS_DEBUG){
+				s.start("127.0.0.1", 8000);
+			}else{
+				s.start("app1101135929.qzone.qzoneapp.com",8000);
+			}
 			trace("正在连接");
 		}
 		public var s:CustomSocket;

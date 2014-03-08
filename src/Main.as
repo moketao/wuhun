@@ -8,16 +8,22 @@ package {
 	
 	import starling.core.Starling;
 	
-	[SWF(width="1000", height="400", frameRate="60", backgroundColor="#dddddd")]
+	[SWF(width="1000", height="400", frameRate="50", backgroundColor="#dddddd")]
 	public class Main extends Sprite
 	{
 		private var _starling:Starling;
 		
 		public function Main()
 		{
+			initParameter();
 			_starling = new Starling(Game, stage);
 			_starling.start();
 			addEventListener(Event.ADDED_TO_STAGE,onAdd);
+		}
+		
+		private function initParameter():void{
+			var ob:Object = this.loaderInfo.parameters;
+			G.IS_DEBUG = ob.debug=="true"? true:false;
 		}
 		
 		protected function onAdd(event:Event):void{
