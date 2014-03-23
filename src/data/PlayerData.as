@@ -23,5 +23,6 @@ package data
 		public var lastDir:Number;//角色的动作状态，参考ActionType这个类（本地的上次记录，不需要从服务端获取）
 		public var fixX:Number;//（本地的需要修正的X偏差量，不需要从服务端获取）
 		public var fixZ:Number;//（本地的需要修正的Z偏差量，不需要从服务端获取）
+		public var faceTo:int;//向左或向右
 	}
 }

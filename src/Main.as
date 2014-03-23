@@ -8,7 +8,7 @@ package {
 	
 	import starling.core.Starling;
 	
-	[SWF(width="1000", height="400", frameRate="50", backgroundColor="#dddddd")]
+	[SWF(width="1000", height="400", frameRate="30", backgroundColor="#dddddd")]
 	public class Main extends Sprite
 	{
 		private var _starling:Starling;

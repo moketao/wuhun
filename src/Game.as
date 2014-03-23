@@ -30,13 +30,18 @@ package
 	import starling.events.Event;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
+	import starling.extensions.MultidirectionalTileScroller;
 	import starling.extensions.QuadtreeSprite;
+	import starling.textures.Texture;
 	import starling.utils.Color;
-	
+
 	public class Game extends Sprite
 	{
+		[Embed(source="../res/map/m0/bga.jpg")]
+		public static const BGA:Class;
 		private var mouseX:Number;
 		private var mouseY:Number;
+		
 		/**所有玩家*/
 		public static var PlayerDic:Dictionary = new Dictionary();
 		public function Game()
@@ -44,6 +49,8 @@ package
 			addEventListener(Event.ADDED_TO_STAGE,onAdd);
 		}
 		private var _quadtreeSprite:QuadtreeSprite;
+		private var backgroundA:MultidirectionalTileScroller;//背景层A
+		private var backgroundB:Sprite;//背景层B
 		private var _worldBounds:Rectangle;
 		private static const SQUARE_SIZE:Number = 50;
 		private static const PAD_SIZE:Number = 100;
@@ -56,10 +63,14 @@ package
 			stage.addEventListener(TouchEvent.TOUCH,onT);
 			stage.addEventListener(Event.ENTER_FRAME,enterFrame);
 			
+			backgroundA = new MultidirectionalTileScroller(1000,400,Texture.fromBitmap(new BGA()));
+			addChild(backgroundA);
+			backgroundA.speed = 0;//人物跑动时才>0
+			backgroundA.play();
 			
 			//四叉树
 			_worldBounds = new Rectangle(0,0, WORLD_BOUND_X, WORLD_BOUND_Y);
-			_quadtreeSprite = new QuadtreeSprite(_worldBounds, new Rectangle(0,0,this.stage.stageWidth+PAD_SIZE*2,this.stage.stageHeight+PAD_SIZE*2),true);
+			_quadtreeSprite = new QuadtreeSprite(_worldBounds, new Rectangle(0,0,this.stage.stageWidth+PAD_SIZE*4,this.stage.stageHeight+PAD_SIZE*4),true);
 			_quadtreeSprite.touchable = false;
 			//_quadtreeSprite.blendMode = BlendMode.NONE;//只对大背景使用，省去 alpha 晕死
 			addChild(_quadtreeSprite);
@@ -160,6 +171,8 @@ package
 		}
 		
 		private var cameraPos:Point = new Point;
+		private var cameraPosLast:Point = new Point;
+		private var cameraIsMove:Boolean;
 		private function cameraFollow(e:EnterFrameEvent):void{
 			
 			//_quadtreeSprite.x += _velocityX * e.passedTime; //todo:使用时间，消除误差
@@ -173,6 +186,14 @@ package
 			cameraPos.x = FP.clamp(cameraPos.x,0,WORLD_BOUND_X-this.stage.stageWidth);
 			cameraPos.y = FP.clamp(cameraPos.y,0,WORLD_BOUND_Y-this.stage.stageHeight);
 
+			if(int(cameraPos.x)!=int(cameraPosLast.x) || int(cameraPos.y)!=int(cameraPosLast.y)){
+				cameraPosLast.x = cameraPos.x;
+				cameraPosLast.y = cameraPos.y;
+				cameraIsMove = true;
+			}else{
+				cameraIsMove = false;
+			}
+			trace(cameraPosLast);
 			_quadtreeSprite.x = -cameraPos.x;//反向横移
 			_quadtreeSprite.y = -cameraPos.y;//原理同上
 
@@ -277,8 +298,16 @@ package
 			}
 			if(h!=0||v!=0){
 				me.d.action = ActionType.RUN;
+				if(h!=0 && cameraIsMove){
+					me.d.faceTo = h>0? 1:-1;
+					backgroundA.speed = 1;
+					backgroundA.angle = me.d.faceTo==1? 0:180;
+				}else{
+					backgroundA.speed = 0;
+				}
 			}else{
 				me.d.action = ActionType.STAND;
+				backgroundA.speed = 0;
 				return me.d.dir;
 			}
 			var p:Number =	Math.atan2(-v,h)*180/Math.PI;//0~180或者0到-180
@@ -305,7 +334,9 @@ package
 			trace("正在连接");
 		}
 		public var s:CustomSocket;
+		private var hasLogin:Boolean;
 		private function login():void{
+			if(hasLogin) return;
 			//登录
 			var c1:C10000Up = new C10000Up();
 			c1.SID = inputTxt.text;
@@ -316,6 +347,8 @@ package
 			var c2:C12000Up = new C12000Up();
 			c2.MapName = "MapA";
 			s.sendMessage(12000, c2);
+			
+			hasLogin = true;
 		}
 		private function on12000(vo:C12000Down):void{
 			if(vo.Flag==1)trace("进入地图");

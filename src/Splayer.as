@@ -1,11 +1,8 @@
 package
 {
-	import flash.display3D.IndexBuffer3D;
 	import flash.utils.Dictionary;
 	
 	import data.PlayerData;
-	
-	import dragonBones.Bone;
 	
 	import starling.core.Starling;
 	import starling.display.Image;
