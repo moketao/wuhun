@@ -20,11 +20,11 @@ package loading
 			loader.addEventListener(BulkProgressEvent.COMPLETE,onGroupOK);
 		}
 		
-		protected function onGroupOK(event:Event):void{
+		protected function onGroupOK(e:Event = null):void{
 			for (var i:int = 0; i < group.length; i++) {
 				var url:String = group[i];
 				var item:LoadingItem = loader.get(url);
-				trace("加载完成:",item.url);
+				trace("加载完成:",item.url.url);
 				//todo: parse all data and save
 			}
 			if(groupFunction){
@@ -68,6 +68,9 @@ package loading
 				}
 			}
 			loader.start();
+			if(loader.isFinished){
+				onGroupOK();//如果全部都在之前加载过，则loader.isFinished为true，可立即执行onGroupOK()。
+			}
 		}
 	}
 }
