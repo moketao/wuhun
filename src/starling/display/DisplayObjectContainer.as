@@ -1,7 +1,7 @@
 // =================================================================================================
 //
 //	Starling Framework
-//	Copyright 2011 Gamua OG. All Rights Reserved.
+//	Copyright 2011-2014 Gamua. All Rights Reserved.
 //
 //	This program is free software. You can redistribute and/or modify it
 //	in accordance with the terms of the accompanying license agreement.
@@ -11,8 +11,10 @@
 package starling.display
 {
     import flash.geom.Matrix;
+    import flash.geom.Matrix3D;
     import flash.geom.Point;
     import flash.geom.Rectangle;
+    import flash.geom.Vector3D;
     import flash.system.Capabilities;
     import flash.utils.getQualifiedClassName;
     
@@ -65,11 +67,15 @@ package starling.display
     public class DisplayObjectContainer extends DisplayObject
     {
         // members
+
         private var mChildren:Vector.<DisplayObject>;
+        private var mTouchGroup:Boolean;
         
         /** Helper objects. */
         private static var sHelperMatrix:Matrix = new Matrix();
+        private static var sHelperMatrix3D:Matrix3D = new Matrix3D();
         private static var sHelperPoint:Point = new Point();
+        private static var sHelperPoint3D:Vector3D = new Vector3D();
         private static var sBroadcastListeners:Vector.<DisplayObject> = new <DisplayObject>[];
         private static var sSortBuffer:Vector.<DisplayObject> = new <DisplayObject>[];
         
@@ -282,7 +288,7 @@ package starling.display
             }
             else if (numChildren == 1)
             {
-                resultRect = mChildren[0].getBounds(targetSpace, resultRect);
+                mChildren[0].getBounds(targetSpace, resultRect);
             }
             else
             {
@@ -292,10 +298,11 @@ package starling.display
                 for (var i:int=0; i<numChildren; ++i)
                 {
                     mChildren[i].getBounds(targetSpace, resultRect);
-                    minX = minX < resultRect.x ? minX : resultRect.x;
-                    maxX = maxX > resultRect.right ? maxX : resultRect.right;
-                    minY = minY < resultRect.y ? minY : resultRect.y;
-                    maxY = maxY > resultRect.bottom ? maxY : resultRect.bottom;
+
+                    if (minX > resultRect.x)      minX = resultRect.x;
+                    if (maxX < resultRect.right)  maxX = resultRect.right;
+                    if (minY > resultRect.y)      minY = resultRect.y;
+                    if (maxY < resultRect.bottom) maxY = resultRect.bottom;
                 }
                 
                 resultRect.setTo(minX, minY, maxX - minX, maxY - minY);
@@ -303,26 +310,28 @@ package starling.display
             
             return resultRect;
         }
-        
+
         /** @inheritDoc */
         public override function hitTest(localPoint:Point, forTouch:Boolean=false):DisplayObject
         {
             if (forTouch && (!visible || !touchable))
                 return null;
             
+            var target:DisplayObject = null;
             var localX:Number = localPoint.x;
             var localY:Number = localPoint.y;
-            
             var numChildren:int = mChildren.length;
+
             for (var i:int=numChildren-1; i>=0; --i) // front to back!
             {
                 var child:DisplayObject = mChildren[i];
                 getTransformationMatrix(child, sHelperMatrix);
                 
                 MatrixUtil.transformCoords(sHelperMatrix, localX, localY, sHelperPoint);
-                var target:DisplayObject = child.hitTest(sHelperPoint, forTouch);
+                target = child.hitTest(sHelperPoint, forTouch);
                 
-                if (target) return target;
+                if (target)
+                    return forTouch && mTouchGroup ? this : target;
             }
             
             return null;
@@ -389,6 +398,13 @@ package starling.display
         /** The number of children of this container. */
         public function get numChildren():int { return mChildren.length; }
         
+        /** If a container is a 'touchGroup', it will act as a single touchable object.
+         *  Touch events will have the container as target, not the touched child.
+         *  (Similar to 'mouseChildren' in the classic display list, but with inverted logic.)
+         *  @default false */
+        public function get touchGroup():Boolean { return mTouchGroup; }
+        public function set touchGroup(value:Boolean):void { mTouchGroup = value; }
+
         // helpers
         
         private static function mergeSort(input:Vector.<DisplayObject>, compareFunc:Function, 

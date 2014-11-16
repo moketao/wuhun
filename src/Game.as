@@ -5,8 +5,9 @@ package
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.text.TextField;
-	import flash.text.TextFieldType;
+	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
+	import flash.utils.setTimeout;
 	
 	import cmds.C10000Up;
 	import cmds.C11000Down;
@@ -19,28 +20,25 @@ package
 	import data.ActionType;
 	import data.PlayerData;
 	
-	import net.flashpunk.FP;
 	import net.flashpunk.utils.Input;
 	import net.flashpunk.utils.Key;
 	
 	import starling.core.Starling;
-	import starling.display.Quad;
 	import starling.display.Sprite;
 	import starling.events.EnterFrameEvent;
 	import starling.events.Event;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
-	import starling.extensions.MultidirectionalTileScroller;
-	import starling.extensions.QuadtreeSprite;
-	import starling.textures.Texture;
 	import starling.utils.Color;
 
 	public class Game extends Sprite
 	{
-		[Embed(source="../res/map/m0/bga.jpg")]
-		public static const BGA:Class;
-		private var mouseX:Number;
-		private var mouseY:Number;
+//		[Embed(source="../res/map/m0/bga.jpg")]
+//		public static const BGA:Class;
+		[Embed(source="map01.txt", mimeType="application/octet-stream")]  
+		public var txtCls:Class; 
+		public var mouseX:Number;
+		public var mouseY:Number;
 		
 		/**所有玩家*/
 		public static var PlayerDic:Dictionary = new Dictionary();
@@ -48,62 +46,30 @@ package
 		{
 			addEventListener(Event.ADDED_TO_STAGE,onAdd);
 		}
-		private var _quadtreeSprite:QuadtreeSprite;
-		private var backgroundA:MultidirectionalTileScroller;//背景层A
-		private var backgroundB:Sprite;//背景层B
-		private var _worldBounds:Rectangle;
-		private static const SQUARE_SIZE:Number = 50;
-		private static const PAD_SIZE:Number = 100;
-		private function onAdd(e:Event):void{
-			
+		public function onAdd(e:Event):void{
 			//细碎小事
 			var isHW:Boolean = Starling.context.driverInfo.toLowerCase().indexOf("software") == -1;
 			trace("isHW Render:",isHW)
-			Starling.current.showStats = true;
+			//Starling.current.showStats = true;
 			stage.addEventListener(TouchEvent.TOUCH,onT);
 			stage.addEventListener(Event.ENTER_FRAME,enterFrame);
 			
-			backgroundA = new MultidirectionalTileScroller(1000,400,Texture.fromBitmap(new BGA()));
-			addChild(backgroundA);
-			backgroundA.speed = 0;//人物跑动时才>0
-			backgroundA.play();
 			
-			//四叉树
-			_worldBounds = new Rectangle(0,0, WORLD_BOUND_X, WORLD_BOUND_Y);
-			_quadtreeSprite = new QuadtreeSprite(_worldBounds, new Rectangle(0,0,this.stage.stageWidth+PAD_SIZE*4,this.stage.stageHeight+PAD_SIZE*4),true);
-			_quadtreeSprite.touchable = false;
-			//_quadtreeSprite.blendMode = BlendMode.NONE;//只对大背景使用，省去 alpha 晕死
-			addChild(_quadtreeSprite);
+			var byteDataTxt:ByteArray = new txtCls();  
+			var str:String = byteDataTxt.readUTFBytes(byteDataTxt.bytesAvailable);
+			var mapOB:Object = JSON.parse(str);
 			
-			
-			//四叉树地图内部的【物体】
-			for (var i:int = 0; i < 1000; ++i)
-			{
-				var square:Quad = new Quad(SQUARE_SIZE, SQUARE_SIZE, randomColor());
-				var randomPosition:Point = randomPointInRectangle(_worldBounds);
-				square.x = randomPosition.x;
-				square.y = randomPosition.y;
-				_quadtreeSprite.addChild(square);
-			}
-			
+			scene = new Scene();
+			addChild(scene);
+			scene.parse(mapOB);
+			mainLayer = scene.mainLayer;
 			
 			//四叉树地图内部的【玩家】，其他玩家将在 Socket 连通后添加。
 			me = new Splayer();
 			me.isME = true;
 			me.x = 180;
-			me.y = 150;
-			_quadtreeSprite.addChild(me);
-			
-			
-			//登录时需要输入名字，由于Starling不支持输入文本，所以下面这个是传统TXT，用于输入文本	//todo：不用时隐藏
-			inputTxt = new TextField();
-			inputTxt.width = 550;
-			inputTxt.height = 50;
-			inputTxt.y = 40;
-			inputTxt.type = TextFieldType.INPUT;
-			inputTxt.text = "删除这行文字，再输入你的名字，然后按回车，即可使用【A】【S】【D】【W】控制角色";
-			Starling.current.nativeOverlay.addChild(inputTxt);
-			
+			me.y = 350;
+			mainLayer.addChild(me);
 			
 			//网络
 			s = CustomSocket.getInstance();
@@ -112,22 +78,22 @@ package
 			s.addCmdListener(12002,on12002);
 			s.addCmdListener(11000,on11000);
 			startSocket();
+			
+			setTimeout(login,3000);
 		}
 		
-		private function randomColor():uint
+		public function randomColor():uint
 		{
 			return Color.rgb(Math.random() * 255, Math.random() * 255, Math.random() * 255);
 		}
-		private function randomPointInRectangle(rectangle:Rectangle):Point
+		public function randomPointInRectangle(rectangle:Rectangle):Point
 		{
 			return new Point (rectangle.x + rectangle.width * Math.random(),
 				rectangle.y + rectangle.height * Math.random());
 		}
 		
 		/** 主循环，每帧运行 	//todo：优化，渲染压力高时，主动降帧 ，并使用e.passedTime来处理移动距离 **/
-		private function enterFrame(e:EnterFrameEvent):void{
-			if(Input.check(Key.ENTER))checkForTextInput();
-			
+		public function enterFrame(e:EnterFrameEvent):void{
 			for each (var other:Splayer in PlayerDic) {
 				var d:PlayerData = other.d;
 				var dir:Number;
@@ -142,14 +108,12 @@ package
 				if(speed>0){
 					var targetPoint:Point = new Point(Math.cos(dir*Math.PI/180)*1000000,-Math.sin(dir*Math.PI/180)*1000000);//极远的目标点
 					if(speed>0){
-						FP.stepTowards(other,targetPoint.x,targetPoint.y,speed);//向着dir这个目标点移动，速度为speed，可以优化stepTowards这个函数
+						stepTowards(other,targetPoint.x,targetPoint.y,speed);//向着dir这个目标点移动，速度为speed，可以优化stepTowards这个函数
 					}
 					
 					//限制，不要超出地图
-					other.x = FP.clamp(other.x,PAD_SIZE,WORLD_BOUND_X-PAD_SIZE);
-					other.y = FP.clamp(other.y,PAD_SIZE,WORLD_BOUND_Y-PAD_SIZE);
-					count
-					if(count%26==0)_quadtreeSprite.updateChild(other);//更新四叉树//26帧更新一次，否则性能消耗太大
+					other.x = clamp(other.x,PAD_SIZE,mainLayer.w-PAD_SIZE);
+					other.y = clamp(other.y,300,mainLayer.h);
 				}
 				if(other.isME){
 					if(needSend12001_about_me(d)){
@@ -162,60 +126,73 @@ package
 				}
 				
 			}
-			if(count%26==0){
-				var sort_arr:Array = [];
-				
-			}
 			
 			cameraFollow(e);
 		}
-		
-		private var cameraPos:Point = new Point;
-		private var cameraPosLast:Point = new Point;
-		private var cameraIsMove:Boolean;
-		private function cameraFollow(e:EnterFrameEvent):void{
-			
-			//_quadtreeSprite.x += _velocityX * e.passedTime; //todo:使用时间，消除误差
-			//_quadtreeSprite.y += _velocityY * e.passedTime; //todo:使用时间，消除误差
+		public static function stepTowards(object:Object, x:Number, y:Number, distance:Number = 1):void
+		{
+			point.x = x - object.x;
+			point.y = y - object.y;
+			if (point.length <= distance)
+			{
+				object.x = x;
+				object.y = y;
+				return;// new Point(x,y);
+			}
+			point.normalize(distance);
+			object.x = object.x+point.x;
+			object.y = object.y+point.y;
+			//return new Point(object.x,object.y);
+		}
+		public static function clamp(value:Number, min:Number, max:Number):Number
+		{
+			if (max > min)
+			{
+				if (value < min) return min;
+				else if (value > max) return max;
+				else return value;
+			} else {
+				// Min/max swapped
+				if (value < max) return max;
+				else if (value > min) return min;
+				else return value;
+			}
+		}
+		public var cameraPos:Point = new Point;
+		public var cameraPosLast:Point = new Point;
+		public var cameraIsMove:Boolean;
+		public function cameraFollow(e:EnterFrameEvent):void{
 			
 			//纯抽象摄像机，原理是反向横移地图。距离视图中间较远时激活次操作
 			cameraPos.x = me.x -this.stage.stageWidth/2;
-			cameraPos.y = me.y -this.stage.stageHeight/2;
+			//cameraPos.y = me.y -this.stage.stageHeight/2;
 			
 			//限制摄像机（实际是限制地图反向横移坐标）
-			cameraPos.x = FP.clamp(cameraPos.x,0,WORLD_BOUND_X-this.stage.stageWidth);
-			cameraPos.y = FP.clamp(cameraPos.y,0,WORLD_BOUND_Y-this.stage.stageHeight);
+			cameraPos.x = clamp(cameraPos.x,0,mainLayer.w-this.stage.stageWidth);
+			//cameraPos.y = clamp(cameraPos.y,0,WORLD_BOUND_Y-this.stage.stageHeight);
 
 			if(int(cameraPos.x)!=int(cameraPosLast.x) || int(cameraPos.y)!=int(cameraPosLast.y)){
 				cameraPosLast.x = cameraPos.x;
-				cameraPosLast.y = cameraPos.y;
+				//cameraPosLast.y = cameraPos.y;
 				cameraIsMove = true;
 			}else{
 				cameraIsMove = false;
 			}
-			trace(cameraPosLast);
-			_quadtreeSprite.x = -cameraPos.x;//反向横移
-			_quadtreeSprite.y = -cameraPos.y;//原理同上
-
-			if(++count%28==0){
-				var newViewPort:Rectangle = _quadtreeSprite.visibleViewport.clone();
-				newViewPort.x = Math.abs(_quadtreeSprite.x)-PAD_SIZE;	//向外扩展更新范围
-				newViewPort.y = Math.abs(_quadtreeSprite.y)-PAD_SIZE;	//同上
-				_quadtreeSprite.visibleViewport = newViewPort;//28帧更新一次，否则 CPU 会爆掉。
-			}
+			mainLayer.x = -cameraPos.x;//反向横移
+			//mainLayer.y = -cameraPos.y;//原理同上
 		}
-		private var count:int;
-		private function fix(other:Splayer, d:PlayerData):void
+		public var count:int;
+		public function fix(other:Splayer, d:PlayerData):void
 		{
 			point.x = d.fixX;
 			point.y = d.fixZ;
-			FP.stepTowards(other,other.x+d.fixX,other.y+d.fixZ,point.length*0.333);//每次接近33.3%
+			stepTowards(other,other.x+d.fixX,other.y+d.fixZ,point.length*0.333);//每次接近33.3%
 			d.fixX *= 0.666;
 			d.fixZ *= 0.666;
 		}
 		
 		/**降低发送的Hz（如果方向不变，action不变）针对 other*/
-		private function needSendfix_about_other(other:Splayer,d:PlayerData):Boolean{
+		public function needSendfix_about_other(other:Splayer,d:PlayerData):Boolean{
 			var need:Boolean = false;
 			if(d.flag==1){
 				//flag值为1时，代表 other要求周围玩家进行更新（包括me）
@@ -235,7 +212,7 @@ package
 		}
 		
 		/**降低发送的Hz（如果方向不变，action不变）针对 me*/
-		private function needSend12001_about_me(d:PlayerData):Boolean{
+		public function needSend12001_about_me(d:PlayerData):Boolean{
 			var need:Boolean = false;
 			if(d.lastAction!=d.action){
 				d.lastAction = d.action;
@@ -252,8 +229,8 @@ package
 		}
 
 		
-		private var actionToSpeedDic:Dictionary;
-		private function getSpeed(action:int):Number{
+		public var actionToSpeedDic:Dictionary;
+		public function getSpeed(action:int):Number{
 			if(actionToSpeedDic==null){
 				actionToSpeedDic = new Dictionary();
 				actionToSpeedDic[0] = 0;//站立速度0
@@ -261,7 +238,7 @@ package
 			}
 			return actionToSpeedDic[action];//todo:考虑各种负面状态。
 		}
-		private function checkNewDir():Number
+		public function checkNewDir():Number
 		{
 			var hasPressDir:Boolean = false;
 			var h:int = 0;
@@ -300,26 +277,17 @@ package
 				me.d.action = ActionType.RUN;
 				if(h!=0 && cameraIsMove){
 					me.d.faceTo = h>0? 1:-1;
-					backgroundA.speed = 1;
-					backgroundA.angle = me.d.faceTo==1? 0:180;
+					scene.moveLayers(cameraPos,mainLayer.w);
 				}else{
-					backgroundA.speed = 0;
+					//backgroundA.speed = 0;
 				}
 			}else{
 				me.d.action = ActionType.STAND;
-				backgroundA.speed = 0;
+				//backgroundA.speed = 0;
 				return me.d.dir;
 			}
 			var p:Number =	Math.atan2(-v,h)*180/Math.PI;//0~180或者0到-180
 			return p;
-		}
-		
-		private function checkForTextInput():void{
-			var ob:* = Starling.current.nativeStage.focus;
-			if(ob==inputTxt){
-				Starling.current.nativeStage.focus = null;
-				login();
-			}
 		}
 		public function startSocket():void {
 			if (s.connected){
@@ -334,14 +302,14 @@ package
 			trace("正在连接");
 		}
 		public var s:CustomSocket;
-		private var hasLogin:Boolean;
-		private function login():void{
+		public var hasLogin:Boolean;
+		public function login():void{
 			if(hasLogin) return;
 			//登录
 			var c1:C10000Up = new C10000Up();
-			c1.SID = inputTxt.text;
+			c1.SID = me.SID;
 			s.sendMessage(10000,c1);
-			PlayerDic[inputTxt.text]=me;
+			PlayerDic[me.SID]=me;
 			
 			//进入地图A
 			var c2:C12000Up = new C12000Up();
@@ -350,26 +318,30 @@ package
 			
 			hasLogin = true;
 		}
-		private function on12000(vo:C12000Down):void{
+		public function on12000(vo:C12000Down):void{
 			if(vo.Flag==1)trace("进入地图");
 		}
-		private function on12002(vo:C12002Down):void{
-			trace("玩家退出:"+vo.SID);
+		public function on12002(vo:C12002Down):void{
+			trace("玩家退出:"+vo.SID,PlayerDic);
 		}
-		private function on11000(vo:C11000Down):void{
+		public function on11000(vo:C11000Down):void{
 			trace("服务器主动推送消息:"+vo.Str);
 		}
 		public static var point:Point = new Point;
 
-		private var me:Splayer;
+		public var me:Splayer;
 
-		private var inputTxt:flash.text.TextField;
-		private var WORLD_BOUND_X:Number = 2000;
-		private var WORLD_BOUND_Y:Number = 1000;
-		private var FOLLOW_RATE:Number = 0.1;
-		private var FOLLOW_TRAIL:Number = 50;
+		public var inputTxt:flash.text.TextField;
+		public var PAD_SIZE:Number = 20;
+		public var FOLLOW_RATE:Number = 0.1;
+		public var FOLLOW_TRAIL:Number = 50;
+		public var mainLayer:Layer;
+
+		public var scene:Scene;
+
+		public var cameraMove:Point;
 		/** 移动 **/
-		private function send_12001_Up():void{
+		public function send_12001_Up():void{
 			var c3:C12001Up = new C12001Up();
 			c3.XX = me.x;
 			c3.ZZ = me.y;
@@ -378,7 +350,7 @@ package
 			c3.Action = me.d.action;
 			s.sendMessage(12001, c3);
 		}
-		private function on_12001_Down(vo:C12001Down):void{
+		public function on_12001_Down(vo:C12001Down):void{
 			//trace(vo.SID+"在移动");
 			var op:Splayer = PlayerDic[vo.SID]
 			if(!op){
@@ -387,7 +359,7 @@ package
 				op.d.SID = vo.SID;
 				op.x = vo.XX;
 				op.y = vo.ZZ;
-				_quadtreeSprite.addChild(op);
+				mainLayer.addChild(op);
 				PlayerDic[vo.SID] = op;
 			}
 			//如果存在，则利用XX和ZZ校准移动，在update或者onEnterFrame里面修正移动，而不是直接赋值
@@ -402,7 +374,7 @@ package
 			op.d.fixZ = op.d.ZZ-op.y;
 			//todo:删除服务器不再关注的op（OtherPlayer），根据距离和热度。
 		}	
-		private function onT(e:TouchEvent):void{
+		public function onT(e:TouchEvent):void{
 			var touch:Touch = e.getTouch(stage);
 			if(!touch) return;
 			var pos:Point = touch.getLocation(stage);

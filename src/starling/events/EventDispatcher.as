@@ -1,7 +1,7 @@
 // =================================================================================================
 //
 //	Starling Framework
-//	Copyright 2011 Gamua OG. All Rights Reserved.
+//	Copyright 2011-2014 Gamua. All Rights Reserved.
 //
 //	This program is free software. You can redistribute and/or modify it
 //	in accordance with the terms of the accompanying license agreement.
@@ -65,18 +65,23 @@ package starling.events
             if (mEventListeners)
             {
                 var listeners:Vector.<Function> = mEventListeners[type] as Vector.<Function>;
-                if (listeners)
+                var numListeners:int = listeners ? listeners.length : 0;
+
+                if (numListeners > 0)
                 {
-                    var numListeners:int = listeners.length;
-                    var remainingListeners:Vector.<Function> = new <Function>[];
-                    
+                    // we must not modify the original vector, but work on a copy.
+                    // (see comment in 'invokeEvent')
+
+                    var index:int = 0;
+                    var restListeners:Vector.<Function> = new Vector.<Function>(numListeners-1);
+
                     for (var i:int=0; i<numListeners; ++i)
                     {
                         var otherListener:Function = listeners[i];
-                        if (otherListener != listener) remainingListeners.push(otherListener);
+                        if (otherListener != listener) restListeners[int(index++)] = otherListener;
                     }
-                    
-                    mEventListeners[type] = remainingListeners;
+
+                    mEventListeners[type] = restListeners;
                 }
             }
         }
@@ -195,8 +200,7 @@ package starling.events
         /** Returns if there are listeners registered for a certain event type. */
         public function hasEventListener(type:String):Boolean
         {
-            var listeners:Vector.<Function> = mEventListeners ?
-                mEventListeners[type] as Vector.<Function> : null;
+            var listeners:Vector.<Function> = mEventListeners ? mEventListeners[type] : null;
             return listeners ? listeners.length != 0 : false;
         }
     }

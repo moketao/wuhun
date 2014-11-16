@@ -1,7 +1,7 @@
 // =================================================================================================
 //
 //	Starling Framework
-//	Copyright 2011 Gamua OG. All Rights Reserved.
+//	Copyright 2011-2014 Gamua. All Rights Reserved.
 //
 //	This program is free software. You can redistribute and/or modify it
 //	in accordance with the terms of the accompanying license agreement.
@@ -10,6 +10,7 @@
 
 package starling.animation
 {
+    import starling.core.starling_internal;
     import starling.events.Event;
     import starling.events.EventDispatcher;
 
@@ -57,17 +58,24 @@ package starling.animation
             
             if (previousTime < mTotalTime && mCurrentTime >= mTotalTime)
             {                
-                mCall.apply(null, mArgs);
-                
                 if (mRepeatCount == 0 || mRepeatCount > 1)
                 {
+                    mCall.apply(null, mArgs);
+                    
                     if (mRepeatCount > 0) mRepeatCount -= 1;
                     mCurrentTime = 0;
                     advanceTime((previousTime + time) - mTotalTime);
                 }
                 else
                 {
+                    // save call & args: they might be changed through an event listener
+                    var call:Function = mCall;
+                    var args:Array = mArgs;
+                    
+                    // in the callback, people might want to call "reset" and re-add it to the
+                    // juggler; so this event has to be dispatched *before* executing 'call'.
                     dispatchEventWith(Event.REMOVE_FROM_JUGGLER);
+                    call.apply(null, args);
                 }
             }
         }
@@ -88,5 +96,27 @@ package starling.animation
          *  Set to '0' to repeat indefinitely. @default 1 */
         public function get repeatCount():int { return mRepeatCount; }
         public function set repeatCount(value:int):void { mRepeatCount = value; }
+        
+        // delayed call pooling
+        
+        private static var sPool:Vector.<DelayedCall> = new <DelayedCall>[];
+        
+        /** @private */
+        starling_internal static function fromPool(call:Function, delay:Number, 
+                                                   args:Array=null):DelayedCall
+        {
+            if (sPool.length) return sPool.pop().reset(call, delay, args);
+            else return new DelayedCall(call, delay, args);
+        }
+        
+        /** @private */
+        starling_internal static function toPool(delayedCall:DelayedCall):void
+        {
+            // reset any object-references, to make sure we don't prevent any garbage collection
+            delayedCall.mCall = null;
+            delayedCall.mArgs = null;
+            delayedCall.removeEventListeners();
+            sPool.push(delayedCall);
+        }
     }
 }

@@ -13,10 +13,10 @@ package
 	
 	public class Splayer extends Sprite
 	{
-		[Embed(source="../res/h17.xml",mimeType="application/octet-stream")]
+		[Embed(source="../res/h18.xml",mimeType="application/octet-stream")]
 		public static const h17xml:Class;
 		
-		[Embed(source="../res/h17.png")]
+		[Embed(source="../res/h18.png")]
 		public static const h17:Class;
 		
 		[Embed(source="../res/shadow.png")]
@@ -38,9 +38,12 @@ package
 		private var m_run:MovieClip;
 		private var m_idle:MovieClip;
 
+		public var SID:String;
 		public var isME:Boolean;
 		public function Splayer()
 		{
+			SID = Math.random()+"";
+			
 			var shadow_img:Texture = Texture.fromBitmap(new Shadow(),false);
 			var t:Texture = Texture.fromBitmap(new h17(),false);
 			var xml:XML = XML(new h17xml());
@@ -48,7 +51,10 @@ package
 			
 			for (var i:int = 0; i < arr.length; i++) {
 				var key:String = arr[i];
-				var mc:MovieClip = new MovieClip(a.getTextures("h17_"+key+"_"),13);
+				var fps:int = 1;
+				if(key==RUN) fps=8;
+				var mc:MovieClip = new MovieClip(a.getTextures("h18_"+key+"_"),fps);
+				mc.y=232;
 				mc.pivotX = mc.width>>1;
 				mc.pivotY = mc.height;
 				if(key==IDLE){
@@ -60,8 +66,11 @@ package
 			//this.readjustSize();
 			
 			var s:Image = new Image(shadow_img);
+			s.alpha = .6;
+			s.scaleX = 1.3;
+			s.scaleY = 1.3;
 			s.pivotX = (s.width>>1) + 5;
-			s.pivotY = s.height - 3;
+			s.pivotY = s.height>>1;
 			addChild(s);
 		}
 		
@@ -91,14 +100,14 @@ package
 			}
 			
 			var dir_abs:int = Math.abs(dir);
-			
 			if(dir_abs==last_dir_abs || dir_abs==90)
 				return;
-			
-			if(dir_abs>90){
-				this.scaleX = -1;
-			}else{
-				this.scaleX = 1;
+			if(!G.IN_PHONE){
+				if(dir_abs>90){
+					this.scaleX = -1;
+				}else{
+					this.scaleX = 1;
+				}
 			}
 			last_dir_abs = dir_abs;				
 		}

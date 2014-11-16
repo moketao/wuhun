@@ -24,6 +24,13 @@ package {
 		private function initParameter():void{
 			var ob:Object = this.loaderInfo.parameters;
 			G.IS_DEBUG = ob.debug=="true"? true:false;
+			if(G.IS_DEBUG){
+				trace("本地模式");
+				G.hostUrl = "http://localhost/xys/res/";
+			}else{
+				trace("服务器模式");
+				G.hostUrl = "http://app1101135929.qzoneapp.com/res/";
+			}
 		}
 		
 		protected function onAdd(event:Event):void{

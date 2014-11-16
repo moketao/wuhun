@@ -47,7 +47,7 @@ package core.platformInterface {
 		 * @param source 邀请好友成功后，被邀请方通过邀请链接进入应用时会携带该参数并透传给应用，用于识别用户来源。 例如"domain=s4.app12345.qqopenapp.com"
 		 */
 		public static function invite(msg:String, img:String):void {
-			var source:String="domain=" + G.m_strHost;
+			var source:String="domain=" + G.hostUrl;
 			callQQInterface("invite", {msg: msg, img: img, source: source});
 		}
 
