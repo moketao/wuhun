@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -24,6 +24,14 @@ package feathers.utils.math
 		{
 			throw new ArgumentError("minimum should be smaller than maximum.");
 		}
-		return Math.min(maximum, Math.max(minimum, value));
+		if(value < minimum)
+		{
+			value = minimum;
+		}
+		else if(value > maximum)
+		{
+			value = maximum;
+		}
+		return value;
 	}
 }

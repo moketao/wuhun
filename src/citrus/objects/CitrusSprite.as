@@ -48,7 +48,6 @@ package citrus.objects {
 			
 		public function CitrusSprite(name:String, params:Object = null)
 		{
-			
 			super(name, params);
 		}
 		

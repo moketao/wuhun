@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -14,7 +14,7 @@ package feathers.core
 	 *
 	 * @see http://wiki.starling-framework.org/feathers/text-renderers
 	 */
-	public interface ITextRenderer extends IFeathersControl
+	public interface ITextRenderer extends IFeathersControl, ITextBaselineControl
 	{
 		/**
 		 * The text to render.
@@ -27,9 +27,15 @@ package feathers.core
 		function set text(value:String):void;
 
 		/**
-		 * The baseline measurement of the text.
+		 * Determines if the text wraps to the next line when it reaches the
+		 * width of the component.
 		 */
-		function get baseline():Number;
+		function get wordWrap():Boolean;
+
+		/**
+		 * @private
+		 */
+		function set wordWrap(value:Boolean):void;
 
 		/**
 		 * Measures the text's bounds (without a full validation, if

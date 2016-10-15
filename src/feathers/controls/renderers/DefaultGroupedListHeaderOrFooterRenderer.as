@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -12,7 +12,9 @@ package feathers.controls.renderers
 	import feathers.core.FeathersControl;
 	import feathers.core.IFeathersControl;
 	import feathers.core.ITextRenderer;
+	import feathers.core.IValidating;
 	import feathers.core.PropertyProxy;
+	import feathers.skins.IStyleProvider;
 
 	import starling.display.DisplayObject;
 
@@ -83,12 +85,33 @@ package feathers.controls.renderers
 		public static const VERTICAL_ALIGN_JUSTIFY:String = "justify";
 
 		/**
-		 * The default value added to the <code>nameList</code> of the content
-		 * label.
+		 * The default value added to the <code>styleNameList</code> of the
+		 * content label.
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
-		public static const DEFAULT_CHILD_NAME_CONTENT_LABEL:String = "feathers-header-footer-renderer-content-label";
+		public static const DEFAULT_CHILD_STYLE_NAME_CONTENT_LABEL:String = "feathers-header-footer-renderer-content-label";
+
+		/**
+		 * DEPRECATED: Replaced by <code>DefaultGroupedListHeaderOrFooterRenderer.DEFAULT_CHILD_STYLE_NAME_CONTENT_LABEL</code>.
+		 *
+		 * <p><strong>DEPRECATION WARNING:</strong> This property is deprecated
+		 * starting with Feathers 2.1. It will be removed in a future version of
+		 * Feathers according to the standard
+		 * <a href="http://wiki.starling-framework.org/feathers/deprecation-policy">Feathers deprecation policy</a>.</p>
+		 *
+		 * @see DefaultGroupedListHeaderOrFooterRenderer#DEFAULT_CHILD_STYLE_NAME_CONTENT_LABEL
+		 */
+		public static const DEFAULT_CHILD_NAME_CONTENT_LABEL:String = DEFAULT_CHILD_STYLE_NAME_CONTENT_LABEL;
+
+		/**
+		 * The default <code>IStyleProvider</code> for all <code>DefaultGroupedListHeaderOrFooterRenderer</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var globalStyleProvider:IStyleProvider;
 
 		/**
 		 * @private
@@ -99,17 +122,42 @@ package feathers.controls.renderers
 		}
 
 		/**
-		 * The value added to the <code>nameList</code> of the content label.
-		 *
-		 * @see feathers.core.IFeathersControl#nameList
-		 */
-		protected var contentLabelName:String = DEFAULT_CHILD_NAME_CONTENT_LABEL;
-
-		/**
 		 * Constructor.
 		 */
 		public function DefaultGroupedListHeaderOrFooterRenderer()
 		{
+			super();
+		}
+
+		/**
+		 * The value added to the <code>styleNameList</code> of the content
+		 * label text renderer.
+		 *
+		 * @see feathers.core.FeathersControl#styleNameList
+		 */
+		protected var contentLabelStyleName:String = DEFAULT_CHILD_STYLE_NAME_CONTENT_LABEL;
+
+		/**
+		 * DEPRECATED: Replaced by <code>contentLabelStyleName</code>.
+		 *
+		 * <p><strong>DEPRECATION WARNING:</strong> This property is deprecated
+		 * starting with Feathers 2.1. It will be removed in a future version of
+		 * Feathers according to the standard
+		 * <a href="http://wiki.starling-framework.org/feathers/deprecation-policy">Feathers deprecation policy</a>.</p>
+		 *
+		 * @see #contentLabelStyleName
+		 */
+		protected function get contentLabelName():String
+		{
+			return this.contentLabelStyleName;
+		}
+
+		/**
+		 * @private
+		 */
+		protected function set contentLabelName(value:String):void
+		{
+			this.contentLabelStyleName = value;
 		}
 
 		/**
@@ -126,6 +174,14 @@ package feathers.controls.renderers
 		 * @private
 		 */
 		protected var content:DisplayObject;
+
+		/**
+		 * @private
+		 */
+		override protected function get defaultStyleProvider():IStyleProvider
+		{
+			return DefaultGroupedListHeaderOrFooterRenderer.globalStyleProvider;
+		}
 
 		/**
 		 * @private
@@ -685,8 +741,8 @@ package feathers.controls.renderers
 		 * A function that generates an <code>ImageLoader</code> that uses the result
 		 * of <code>contentSourceField</code> or <code>contentSourceFunction</code>.
 		 * Useful for transforming the <code>ImageLoader</code> in some way. For
-		 * example, you might want to scale it for current DPI or apply pixel
-		 * snapping.
+		 * example, you might want to scale it for current screen density or
+		 * apply pixel snapping.
 		 *
 		 * <p>In the following example, a custom content loader factory is passed
 		 * to the renderer:</p>
@@ -780,10 +836,9 @@ package feathers.controls.renderers
 		 *
 		 * <p>If the subcomponent has its own subcomponents, their properties
 		 * can be set too, using attribute <code>&#64;</code> notation. For example,
-		 * to set the skin on the thumb of a <code>SimpleScrollBar</code>
-		 * which is in a <code>Scroller</code> which is in a <code>List</code>,
-		 * you can use the following syntax:</p>
-		 * <pre>list.scrollerProperties.&#64;verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
+		 * to set the skin on the thumb which is in a <code>SimpleScrollBar</code>,
+		 * which is in a <code>List</code>, you can use the following syntax:</p>
+		 * <pre>list.verticalScrollBarProperties.&#64;thumbProperties.defaultSkin = new Image(texture);</pre>
 		 *
 		 * <p>In the following example, a custom content label properties are
 		 * customized:</p>
@@ -822,7 +877,7 @@ package feathers.controls.renderers
 			}
 			if(!(value is PropertyProxy))
 			{
-				const newValue:PropertyProxy = new PropertyProxy();
+				var newValue:PropertyProxy = new PropertyProxy();
 				for(var propertyName:String in value)
 				{
 					newValue[propertyName] = value[propertyName];
@@ -1218,9 +1273,9 @@ package feathers.controls.renderers
 		 */
 		override protected function draw():void
 		{
-			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
-			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
-			const stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
+			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
+			var stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
 			var sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
 
 			if(stylesInvalid || stateInvalid)
@@ -1236,6 +1291,11 @@ package feathers.controls.renderers
 			if(dataInvalid || stylesInvalid)
 			{
 				this.refreshContentLabelStyles();
+			}
+
+			if(dataInvalid || stateInvalid)
+			{
+				this.refreshEnabled();
 			}
 
 			sizeInvalid = this.autoSizeIfNeeded() || sizeInvalid;
@@ -1273,8 +1333,8 @@ package feathers.controls.renderers
 		 */
 		protected function autoSizeIfNeeded():Boolean
 		{
-			const needsWidth:Boolean = isNaN(this.explicitWidth);
-			const needsHeight:Boolean = isNaN(this.explicitHeight);
+			var needsWidth:Boolean = this.explicitWidth !== this.explicitWidth; //isNaN
+			var needsHeight:Boolean = this.explicitHeight !== this.explicitHeight; //isNaN
 			if(!needsWidth && !needsHeight)
 			{
 				return false;
@@ -1286,7 +1346,12 @@ package feathers.controls.renderers
 			if(this.contentLabel)
 			{
 				//special case for label to allow word wrap
-				this.contentLabel.maxWidth = (isNaN(this.explicitWidth) ? this._maxWidth : this.explicitWidth) - this._paddingLeft - this._paddingRight;
+				var labelMaxWidth:Number = this.explicitWidth;
+				if(needsWidth)
+				{
+					labelMaxWidth = this._maxWidth;
+				}
+				this.contentLabel.maxWidth = labelMaxWidth - this._paddingLeft - this._paddingRight;
 			}
 			if(this._horizontalAlign == HORIZONTAL_ALIGN_JUSTIFY)
 			{
@@ -1296,26 +1361,28 @@ package feathers.controls.renderers
 			{
 				this.content.height = this.explicitHeight - this._paddingTop - this._paddingBottom;
 			}
-			if(this.content is IFeathersControl)
+			if(this.content is IValidating)
 			{
-				IFeathersControl(this.content).validate();
+				IValidating(this.content).validate();
 			}
 			var newWidth:Number = this.explicitWidth;
 			var newHeight:Number = this.explicitHeight;
 			if(needsWidth)
 			{
 				newWidth = this.content.width + this._paddingLeft + this._paddingRight;
-				if(!isNaN(this.originalBackgroundWidth))
+				if(this.originalBackgroundWidth === this.originalBackgroundWidth && //!isNaN
+					this.originalBackgroundWidth > newWidth)
 				{
-					newWidth = Math.max(newWidth, this.originalBackgroundWidth);
+					newWidth = this.originalBackgroundWidth;
 				}
 			}
 			if(needsHeight)
 			{
 				newHeight = this.content.height + this._paddingTop + this._paddingBottom;
-				if(!isNaN(this.originalBackgroundHeight))
+				if(this.originalBackgroundHeight === this.originalBackgroundHeight && //!isNaN
+					this.originalBackgroundHeight > newHeight)
 				{
-					newHeight = Math.max(newHeight, this.originalBackgroundHeight);
+					newHeight = this.originalBackgroundHeight;
 				}
 			}
 			return this.setSizeInternal(newWidth, newHeight, false);
@@ -1341,11 +1408,11 @@ package feathers.controls.renderers
 			}
 			if(this.currentBackgroundSkin)
 			{
-				if(isNaN(this.originalBackgroundWidth))
+				if(this.originalBackgroundWidth !== this.originalBackgroundWidth) //isNaN
 				{
 					this.originalBackgroundWidth = this.currentBackgroundSkin.width;
 				}
-				if(isNaN(this.originalBackgroundHeight))
+				if(this.originalBackgroundHeight !== this.originalBackgroundHeight) //isNaN
 				{
 					this.originalBackgroundHeight = this.currentBackgroundSkin.height;
 				}
@@ -1360,7 +1427,7 @@ package feathers.controls.renderers
 		{
 			if(this._owner)
 			{
-				const newContent:DisplayObject = this.itemToContent(this._data);
+				var newContent:DisplayObject = this.itemToContent(this._data);
 				if(newContent != this.content)
 				{
 					if(this.content)
@@ -1405,9 +1472,9 @@ package feathers.controls.renderers
 			{
 				if(!this.contentLabel)
 				{
-					const factory:Function = this._contentLabelFactory != null ? this._contentLabelFactory : FeathersControl.defaultTextRendererFactory;
+					var factory:Function = this._contentLabelFactory != null ? this._contentLabelFactory : FeathersControl.defaultTextRendererFactory;
 					this.contentLabel = ITextRenderer(factory());
-					FeathersControl(this.contentLabel).nameList.add(this.contentLabelName);
+					FeathersControl(this.contentLabel).styleNameList.add(this.contentLabelName);
 				}
 				this.contentLabel.text = label;
 			}
@@ -1421,20 +1488,27 @@ package feathers.controls.renderers
 		/**
 		 * @private
 		 */
+		protected function refreshEnabled():void
+		{
+			if(this.content is IFeathersControl)
+			{
+				IFeathersControl(this.content).isEnabled = this._isEnabled;
+			}
+		}
+
+		/**
+		 * @private
+		 */
 		protected function refreshContentLabelStyles():void
 		{
 			if(!this.contentLabel)
 			{
 				return;
 			}
-			const displayContentLabel:DisplayObject = DisplayObject(this.contentLabel);
 			for(var propertyName:String in this._contentLabelProperties)
 			{
-				if(displayContentLabel.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._contentLabelProperties[propertyName];
-					displayContentLabel[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._contentLabelProperties[propertyName];
+				this.contentLabel[propertyName] = propertyValue;
 			}
 		}
 

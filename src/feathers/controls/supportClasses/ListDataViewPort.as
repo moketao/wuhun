@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -38,7 +38,7 @@ package feathers.controls.supportClasses
 	 * @private
 	 * Used internally by List. Not meant to be used on its own.
 	 */
-	public final class ListDataViewPort extends FeathersControl implements IViewPort
+	public class ListDataViewPort extends FeathersControl implements IViewPort
 	{
 		private static const INVALIDATION_FLAG_ITEM_RENDERER_FACTORY:String = "itemRendererFactory";
 
@@ -71,7 +71,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("minVisibleWidth cannot be NaN");
 			}
@@ -92,7 +92,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("maxVisibleWidth cannot be NaN");
 			}
@@ -111,7 +111,8 @@ package feathers.controls.supportClasses
 
 		public function set visibleWidth(value:Number):void
 		{
-			if(this.explicitVisibleWidth == value || (isNaN(value) && isNaN(this.explicitVisibleWidth)))
+			if(this.explicitVisibleWidth == value ||
+				(value !== value && this.explicitVisibleWidth !== this.explicitVisibleWidth)) //isNaN
 			{
 				return;
 			}
@@ -132,7 +133,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("minVisibleHeight cannot be NaN");
 			}
@@ -153,7 +154,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("maxVisibleHeight cannot be NaN");
 			}
@@ -172,7 +173,8 @@ package feathers.controls.supportClasses
 
 		public function set visibleHeight(value:Number):void
 		{
-			if(this.explicitVisibleHeight == value || (isNaN(value) && isNaN(this.explicitVisibleHeight)))
+			if(this.explicitVisibleHeight == value ||
+				(value !== value && this.explicitVisibleHeight !== this.explicitVisibleHeight)) //isNaN
 			{
 				return;
 			}
@@ -230,6 +232,8 @@ package feathers.controls.supportClasses
 			}
 		}
 
+		private var _updateForDataReset:Boolean = false;
+
 		private var _dataProvider:ListCollection;
 
 		public function get dataProvider():ListCollection
@@ -266,6 +270,7 @@ package feathers.controls.supportClasses
 			{
 				IVariableVirtualLayout(this._layout).resetVariableVirtualCache();
 			}
+			this._updateForDataReset = true;
 			this.invalidate(INVALIDATION_FLAG_DATA);
 		}
 
@@ -527,7 +532,19 @@ package feathers.controls.supportClasses
 			{
 				result = new Point();
 			}
-			return this._layout.getScrollPositionForIndex(index, this._layoutItems, 0, 0, this.actualVisibleWidth, this.actualVisibleHeight, result);
+			return this._layout.getScrollPositionForIndex(index, this._layoutItems,
+				0, 0, this.actualVisibleWidth, this.actualVisibleHeight, result);
+		}
+
+		public function getNearestScrollPositionForIndex(index:int, result:Point = null):Point
+		{
+			if(!result)
+			{
+				result = new Point();
+			}
+			return this._layout.getNearestScrollPositionForIndex(index,
+				this._horizontalScrollPosition, this._verticalScrollPosition,
+				this._layoutItems, 0, 0, this.actualVisibleWidth, this.actualVisibleHeight, result);
 		}
 
 		override public function dispose():void
@@ -540,54 +557,69 @@ package feathers.controls.supportClasses
 
 		override protected function draw():void
 		{
-			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
-			const scrollInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SCROLL);
-			const sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
-			const selectionInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SELECTED);
-			const itemRendererInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
-			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
-			const stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
-			const layoutInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_LAYOUT);
+			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var scrollInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SCROLL);
+			var sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
+			var selectionInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SELECTED);
+			var itemRendererInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
+			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
+			var stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
+			var layoutInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_LAYOUT);
+
+			//scrolling only affects the layout is requiresLayoutOnScroll is true
+			if(!layoutInvalid && scrollInvalid && this._layout && this._layout.requiresLayoutOnScroll)
+			{
+				layoutInvalid = true;
+			}
+
+			var basicsInvalid:Boolean = sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid;
 
 			var oldIgnoreRendererResizing:Boolean = this._ignoreRendererResizing;
 			this._ignoreRendererResizing = true;
 			var oldIgnoreLayoutChanges:Boolean = this._ignoreLayoutChanges;
 			this._ignoreLayoutChanges = true;
-			var oldIgnoreSelectionChanges:Boolean = this._ignoreSelectionChanges;
-			this._ignoreSelectionChanges = true;
 
 			if(scrollInvalid || sizeInvalid)
 			{
 				this.refreshViewPortBounds();
 			}
-			if(scrollInvalid || sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(basicsInvalid)
 			{
 				this.refreshInactiveRenderers(itemRendererInvalid);
 			}
-			if(stylesInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(dataInvalid || layoutInvalid || itemRendererInvalid)
 			{
 				this.refreshLayoutTypicalItem();
 			}
-			if(scrollInvalid || sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(basicsInvalid)
 			{
 				this.refreshRenderers();
 			}
-			if(scrollInvalid || stylesInvalid || sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(stylesInvalid || basicsInvalid)
 			{
 				this.refreshItemRendererStyles();
 			}
-			if(scrollInvalid || selectionInvalid || sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(selectionInvalid || basicsInvalid)
 			{
+				//unlike resizing renderers and layout changes, we only want to
+				//stop listening for selection changes when we're forcibly
+				//updating selection. other property changes on item renderers
+				//can validly change selection, and we need to detect that.
+				var oldIgnoreSelectionChanges:Boolean = this._ignoreSelectionChanges;
+				this._ignoreSelectionChanges = true;
 				this.refreshSelection();
+				this._ignoreSelectionChanges = oldIgnoreSelectionChanges;
 			}
-			if(scrollInvalid || stateInvalid || sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(stateInvalid || basicsInvalid)
 			{
 				this.refreshEnabled();
 			}
 			this._ignoreLayoutChanges = oldIgnoreLayoutChanges;
-			this._ignoreSelectionChanges = oldIgnoreSelectionChanges;
 
-			this._layout.layout(this._layoutItems, this._viewPortBounds, this._layoutResult);
+			if(stateInvalid || selectionInvalid || stylesInvalid || basicsInvalid)
+			{
+				this._layout.layout(this._layoutItems, this._viewPortBounds, this._layoutResult);
+			}
 
 			this._ignoreRendererResizing = oldIgnoreRendererResizing;
 
@@ -600,7 +632,7 @@ package feathers.controls.supportClasses
 			//final validation to avoid juggler next frame issues
 			this.validateItemRenderers();
 		}
-		
+
 		private function invalidateParent(flag:String = INVALIDATION_FLAG_ALL):void
 		{
 			Scroller(this.parent).invalidate(flag);
@@ -619,7 +651,6 @@ package feathers.controls.supportClasses
 		private function refreshLayoutTypicalItem():void
 		{
 			var virtualLayout:IVirtualLayout = this._layout as IVirtualLayout;
-
 			if(!virtualLayout || !virtualLayout.useVirtualLayout)
 			{
 				//the old layout was virtual, but this one isn't
@@ -653,37 +684,57 @@ package feathers.controls.supportClasses
 				{
 					typicalItem = this._dataProvider.getItemAt(0);
 				}
-				else
+			}
+
+			if(typicalItem)
+			{
+				var typicalRenderer:IListItemRenderer = IListItemRenderer(this._rendererMap[typicalItem]);
+				if(!typicalRenderer && this._typicalItemRenderer)
 				{
-					virtualLayout.typicalItem = null;
-					return;
+					//we can reuse the typical item renderer if the old typical item
+					//wasn't in the data provider.
+					var canReuse:Boolean = !this._typicalItemIsInDataProvider;
+					if(!canReuse)
+					{
+						//we can also reuse the typical item renderer if the old
+						//typical item was in the data provider, but it isn't now.
+						canReuse = this._dataProvider.getItemIndex(this._typicalItemRenderer.data) < 0;
+					}
+					if(canReuse)
+					{
+						//if the old typical item was in the data provider, remove
+						//it from the renderer map.
+						if(this._typicalItemIsInDataProvider)
+						{
+							delete this._rendererMap[this._typicalItemRenderer.data];
+						}
+						typicalRenderer = this._typicalItemRenderer;
+						typicalRenderer.data = typicalItem;
+						typicalRenderer.index = typicalItemIndex;
+						//if the new typical item is in the data provider, add it
+						//to the renderer map.
+						if(newTypicalItemIsInDataProvider)
+						{
+							this._rendererMap[typicalItem] = typicalRenderer;
+						}
+					}
+				}
+				if(!typicalRenderer)
+				{
+					//if we still don't have a typical item renderer, we need to
+					//create a new one.
+					typicalRenderer = this.createRenderer(typicalItem, typicalItemIndex, false, !newTypicalItemIsInDataProvider);
+					if(!this._typicalItemIsInDataProvider && this._typicalItemRenderer)
+					{
+						//get rid of the old typical item renderer if it isn't
+						//needed anymore.  since it was not in the data provider, we
+						//don't need to mess with the renderer map dictionary.
+						this.destroyRenderer(this._typicalItemRenderer);
+						this._typicalItemRenderer = null;
+					}
 				}
 			}
 
-			var typicalRenderer:IListItemRenderer = IListItemRenderer(this._rendererMap[typicalItem]);
-			if(!typicalRenderer && !newTypicalItemIsInDataProvider && !this._typicalItemIsInDataProvider && this._typicalItemRenderer)
-			{
-				//can use reuse the old item renderer instance
-				//since it is not in the data provider, we don't need to mess
-				//with the renderer map dictionary.
-				typicalRenderer = this._typicalItemRenderer;
-				typicalRenderer.data = typicalItem;
-				typicalRenderer.index = typicalItemIndex;
-			}
-			if(!typicalRenderer)
-			{
-				typicalRenderer = this.createRenderer(typicalItem, typicalItemIndex, false, !newTypicalItemIsInDataProvider);
-				if(!this._typicalItemIsInDataProvider && this._typicalItemRenderer)
-				{
-					//get rid of the old one if it isn't needed anymore
-					//since it is not in the data provider, we don't need to mess
-					//with the renderer map dictionary.
-					this.destroyRenderer(this._typicalItemRenderer);
-					this._typicalItemRenderer = null;
-				}
-			}
-
-			this.refreshOneItemRendererStyles(typicalRenderer);
 			virtualLayout.typicalItem = DisplayObject(typicalRenderer);
 			this._typicalItemRenderer = typicalRenderer;
 			this._typicalItemIsInDataProvider = newTypicalItemIsInDataProvider;
@@ -699,20 +750,17 @@ package feathers.controls.supportClasses
 
 		private function refreshOneItemRendererStyles(renderer:IListItemRenderer):void
 		{
-			const displayRenderer:DisplayObject = DisplayObject(renderer);
+			var displayRenderer:DisplayObject = DisplayObject(renderer);
 			for(var propertyName:String in this._itemRendererProperties)
 			{
-				if(displayRenderer.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._itemRendererProperties[propertyName];
-					displayRenderer[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._itemRendererProperties[propertyName];
+				displayRenderer[propertyName] = propertyValue;
 			}
 		}
 
 		private function refreshSelection():void
 		{
-			const rendererCount:int = this._activeRenderers.length;
+			var rendererCount:int = this._activeRenderers.length;
 			for(var i:int = 0; i < rendererCount; i++)
 			{
 				var renderer:IListItemRenderer = this._activeRenderers[i];
@@ -722,10 +770,10 @@ package feathers.controls.supportClasses
 
 		private function refreshEnabled():void
 		{
-			const rendererCount:int = this._activeRenderers.length;
+			var rendererCount:int = this._activeRenderers.length;
 			for(var i:int = 0; i < rendererCount; i++)
 			{
-				const itemRenderer:IFeathersControl = IFeathersControl(this._activeRenderers[i]);
+				var itemRenderer:IFeathersControl = IFeathersControl(this._activeRenderers[i]);
 				itemRenderer.isEnabled = this._isEnabled;
 			}
 		}
@@ -745,7 +793,7 @@ package feathers.controls.supportClasses
 
 		private function refreshInactiveRenderers(itemRendererTypeIsInvalid:Boolean):void
 		{
-			const temp:Vector.<IListItemRenderer> = this._inactiveRenderers;
+			var temp:Vector.<IListItemRenderer> = this._inactiveRenderers;
 			this._inactiveRenderers = this._activeRenderers;
 			this._activeRenderers = temp;
 			if(this._activeRenderers.length > 0)
@@ -773,44 +821,52 @@ package feathers.controls.supportClasses
 
 		private function refreshRenderers():void
 		{
-			if(this._typicalItemRenderer && this._typicalItemIsInDataProvider)
+			if(this._typicalItemRenderer)
 			{
-				//this renderer is already is use by the typical item, so we
-				//don't want to allow it to be used by other items.
-				var inactiveIndex:int = this._inactiveRenderers.indexOf(this._typicalItemRenderer);
-				if(inactiveIndex >= 0)
+				if(this._typicalItemIsInDataProvider)
 				{
-					this._inactiveRenderers[inactiveIndex] = null;
+					//this renderer is already is use by the typical item, so we
+					//don't want to allow it to be used by other items.
+					var inactiveIndex:int = this._inactiveRenderers.indexOf(this._typicalItemRenderer);
+					if(inactiveIndex >= 0)
+					{
+						this._inactiveRenderers[inactiveIndex] = null;
+					}
+					//if refreshLayoutTypicalItem() was called, it will have already
+					//added the typical item renderer to the active renderers. if
+					//not, we need to do it here.
+					var activeRendererCount:int = this._activeRenderers.length;
+					if(activeRendererCount == 0)
+					{
+						this._activeRenderers[activeRendererCount] = this._typicalItemRenderer;
+					}
 				}
-				//if refreshLayoutTypicalItem() was called, it will have already
-				//added the typical item renderer to the active renderers. if
-				//not, we need to do it here.
-				var activeRendererCount:int = this._activeRenderers.length;
-				if(activeRendererCount == 0)
-				{
-					this._activeRenderers[activeRendererCount] = this._typicalItemRenderer;
-				}
+				//we need to set the typical item renderer's properties here
+				//because they may be needed for proper measurement in a virtual
+				//layout.
+				this.refreshOneItemRendererStyles(this._typicalItemRenderer);
 			}
 
 			this.findUnrenderedData();
 			this.recoverInactiveRenderers();
 			this.renderUnrenderedData();
 			this.freeInactiveRenderers();
+			this._updateForDataReset = false;
 		}
 
 		private function findUnrenderedData():void
 		{
-			const itemCount:int = this._dataProvider ? this._dataProvider.length : 0;
-			const virtualLayout:IVirtualLayout = this._layout as IVirtualLayout;
-			const useVirtualLayout:Boolean = virtualLayout && virtualLayout.useVirtualLayout;
+			var itemCount:int = this._dataProvider ? this._dataProvider.length : 0;
+			var virtualLayout:IVirtualLayout = this._layout as IVirtualLayout;
+			var useVirtualLayout:Boolean = virtualLayout && virtualLayout.useVirtualLayout;
 			if(useVirtualLayout)
 			{
 				virtualLayout.measureViewPort(itemCount, this._viewPortBounds, HELPER_POINT);
 				virtualLayout.getVisibleIndicesAtScrollPosition(this._horizontalScrollPosition, this._verticalScrollPosition, HELPER_POINT.x, HELPER_POINT.y, itemCount, HELPER_VECTOR);
 			}
 
-			const unrenderedItemCount:int = useVirtualLayout ? HELPER_VECTOR.length : itemCount;
-			const canUseBeforeAndAfter:Boolean = this._layout is ITrimmedVirtualLayout && useVirtualLayout &&
+			var unrenderedItemCount:int = useVirtualLayout ? HELPER_VECTOR.length : itemCount;
+			var canUseBeforeAndAfter:Boolean = this._layout is ITrimmedVirtualLayout && useVirtualLayout &&
 				(!(this._layout is IVariableVirtualLayout) || !IVariableVirtualLayout(this._layout).hasVariableItemDimensions) &&
 				unrenderedItemCount > 0;
 			if(canUseBeforeAndAfter)
@@ -834,8 +890,8 @@ package feathers.controls.supportClasses
 				{
 					beforeItemCount = 0;
 				}
-				const afterItemCount:int = itemCount - 1 - maxIndex;
-				const sequentialVirtualLayout:ITrimmedVirtualLayout = ITrimmedVirtualLayout(this._layout);
+				var afterItemCount:int = itemCount - 1 - maxIndex;
+				var sequentialVirtualLayout:ITrimmedVirtualLayout = ITrimmedVirtualLayout(this._layout);
 				sequentialVirtualLayout.beforeVirtualizedItemCount = beforeItemCount;
 				sequentialVirtualLayout.afterVirtualizedItemCount = afterItemCount;
 				this._layoutItems.length = itemCount - beforeItemCount - afterItemCount;
@@ -865,6 +921,20 @@ package feathers.controls.supportClasses
 					//if this item renderer used to be the typical item
 					//renderer, but it isn't anymore, it may have been set invisible!
 					renderer.visible = true;
+					if(this._updateForDataReset)
+					{
+						//similar to calling updateItemAt(), replacing the data
+						//provider or resetting its source means that we should
+						//trick the item renderer into thinking it has new data.
+						//many developers seem to expect this behavior, so while
+						//it's not the most optimal for performance, it saves on
+						//support time in the forums. thankfully, it's still
+						//somewhat optimized since the same item renderer will
+						//receive the same data, and the children generally
+						//won't have changed much, if at all.
+						renderer.data = null;
+						renderer.data = item;
+					}
 
 					//the typical item renderer is a special case, and we will
 					//have already put it into the active renderers, so we don't
@@ -922,7 +992,7 @@ package feathers.controls.supportClasses
 
 		private function renderUnrenderedData():void
 		{
-			const itemCount:int = this._unrenderedData.length;
+			var itemCount:int = this._unrenderedData.length;
 			for(var i:int = 0; i < itemCount; i++)
 			{
 				var item:Object = this._unrenderedData.shift();
@@ -935,7 +1005,7 @@ package feathers.controls.supportClasses
 
 		private function recoverInactiveRenderers():void
 		{
-			const itemCount:int = this._inactiveRenderers.length;
+			var itemCount:int = this._inactiveRenderers.length;
 			for(var i:int = 0; i < itemCount; i++)
 			{
 				var renderer:IListItemRenderer = this._inactiveRenderers[i];
@@ -950,7 +1020,7 @@ package feathers.controls.supportClasses
 
 		private function freeInactiveRenderers():void
 		{
-			const itemCount:int = this._inactiveRenderers.length;
+			var itemCount:int = this._inactiveRenderers.length;
 			for(var i:int = 0; i < itemCount; i++)
 			{
 				var renderer:IListItemRenderer = this._inactiveRenderers.shift();
@@ -980,7 +1050,7 @@ package feathers.controls.supportClasses
 					var uiRenderer:IFeathersControl = IFeathersControl(renderer);
 					if(this._itemRendererName && this._itemRendererName.length > 0)
 					{
-						uiRenderer.nameList.add(this._itemRendererName);
+						uiRenderer.styleNameList.add(this._itemRendererName);
 					}
 					this.addChild(DisplayObject(renderer));
 				}
@@ -1002,6 +1072,7 @@ package feathers.controls.supportClasses
 			{
 				this._rendererMap[item] = renderer;
 				this._activeRenderers[this._activeRenderers.length] = renderer;
+				renderer.addEventListener(Event.TRIGGERED, renderer_triggeredHandler);
 				renderer.addEventListener(Event.CHANGE, renderer_changeHandler);
 				renderer.addEventListener(FeathersEventType.RESIZE, renderer_resizeHandler);
 				this._owner.dispatchEventWith(FeathersEventType.RENDERER_ADD, false, renderer);
@@ -1012,6 +1083,7 @@ package feathers.controls.supportClasses
 
 		private function destroyRenderer(renderer:IListItemRenderer):void
 		{
+			renderer.removeEventListener(Event.TRIGGERED, renderer_triggeredHandler);
 			renderer.removeEventListener(Event.CHANGE, renderer_changeHandler);
 			renderer.removeEventListener(FeathersEventType.RESIZE, renderer_resizeHandler);
 			renderer.owner = null;
@@ -1036,25 +1108,7 @@ package feathers.controls.supportClasses
 
 		private function dataProvider_addItemHandler(event:Event, index:int):void
 		{
-			var selectionChanged:Boolean = false;
-			const newIndices:Vector.<int> = new <int>[];
-			const indexCount:int = this._selectedIndices.length;
-			for(var i:int = 0; i < indexCount; i++)
-			{
-				var currentIndex:int = this._selectedIndices.getItemAt(i) as int;
-				if(currentIndex >= index)
-				{
-					currentIndex++;
-					selectionChanged = true;
-				}
-				newIndices.push(currentIndex);
-			}
-			if(selectionChanged)
-			{
-				this._selectedIndices.data = newIndices;
-			}
-
-			const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+			var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 			if(!layout || !layout.hasVariableItemDimensions)
 			{
 				return;
@@ -1064,32 +1118,7 @@ package feathers.controls.supportClasses
 
 		private function dataProvider_removeItemHandler(event:Event, index:int):void
 		{
-			var selectionChanged:Boolean = false;
-			const newIndices:Vector.<int> = new <int>[];
-			const indexCount:int = this._selectedIndices.length;
-			for(var i:int = 0; i < indexCount; i++)
-			{
-				var currentIndex:int = this._selectedIndices.getItemAt(i) as int;
-				if(currentIndex == index)
-				{
-					selectionChanged = true;
-				}
-				else
-				{
-					if(currentIndex > index)
-					{
-						currentIndex--;
-						selectionChanged = true;
-					}
-					newIndices.push(currentIndex);
-				}
-			}
-			if(selectionChanged)
-			{
-				this._selectedIndices.data = newIndices;
-			}
-
-			const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+			var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 			if(!layout || !layout.hasVariableItemDimensions)
 			{
 				return;
@@ -1099,13 +1128,7 @@ package feathers.controls.supportClasses
 
 		private function dataProvider_replaceItemHandler(event:Event, index:int):void
 		{
-			const indexOfIndex:int = this._selectedIndices.getItemIndex(index);
-			if(indexOfIndex >= 0)
-			{
-				this._selectedIndices.removeItemAt(indexOfIndex);
-			}
-
-			const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+			var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 			if(!layout || !layout.hasVariableItemDimensions)
 			{
 				return;
@@ -1115,9 +1138,9 @@ package feathers.controls.supportClasses
 
 		private function dataProvider_resetHandler(event:Event):void
 		{
-			this._selectedIndices.removeAll();
+			this._updateForDataReset = true;
 
-			const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+			var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 			if(!layout || !layout.hasVariableItemDimensions)
 			{
 				return;
@@ -1127,8 +1150,8 @@ package feathers.controls.supportClasses
 
 		private function dataProvider_updateItemHandler(event:Event, index:int):void
 		{
-			const item:Object = this._dataProvider.getItemAt(index);
-			const renderer:IListItemRenderer = IListItemRenderer(this._rendererMap[item]);
+			var item:Object = this._dataProvider.getItemAt(index);
+			var renderer:IListItemRenderer = IListItemRenderer(this._rendererMap[item]);
 			if(!renderer)
 			{
 				return;
@@ -1153,15 +1176,21 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+			var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 			if(!layout || !layout.hasVariableItemDimensions)
 			{
 				return;
 			}
-			const renderer:IListItemRenderer = IListItemRenderer(event.currentTarget);
+			var renderer:IListItemRenderer = IListItemRenderer(event.currentTarget);
 			layout.resetVariableVirtualCacheAtIndex(renderer.index, DisplayObject(renderer));
 			this.invalidate(INVALIDATION_FLAG_LAYOUT);
 			this.invalidateParent(INVALIDATION_FLAG_LAYOUT);
+		}
+
+		private function renderer_triggeredHandler(event:Event):void
+		{
+			var renderer:IListItemRenderer = IListItemRenderer(event.currentTarget);
+			this.parent.dispatchEventWith(Event.TRIGGERED, false, renderer.data);
 		}
 
 		private function renderer_changeHandler(event:Event):void
@@ -1170,17 +1199,17 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			const renderer:IListItemRenderer = IListItemRenderer(event.currentTarget);
+			var renderer:IListItemRenderer = IListItemRenderer(event.currentTarget);
 			if(!this._isSelectable || this._isScrolling)
 			{
 				renderer.isSelected = false;
 				return;
 			}
-			const isSelected:Boolean = renderer.isSelected;
-			const index:int = renderer.index;
+			var isSelected:Boolean = renderer.isSelected;
+			var index:int = renderer.index;
 			if(this._allowMultipleSelection)
 			{
-				const indexOfIndex:int = this._selectedIndices.getItemIndex(index);
+				var indexOfIndex:int = this._selectedIndices.getItemIndex(index);
 				if(isSelected && indexOfIndex < 0)
 				{
 					this._selectedIndices.addItem(index);

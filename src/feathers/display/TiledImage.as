@@ -1,17 +1,22 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
 */
 package feathers.display
 {
+	import feathers.core.IValidating;
+	import feathers.core.ValidationQueue;
+	import feathers.utils.display.getDisplayObjectDepthFromStage;
+
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 
 	import starling.core.RenderSupport;
+	import starling.core.Starling;
 	import starling.display.DisplayObject;
 	import starling.display.Image;
 	import starling.display.QuadBatch;
@@ -21,14 +26,41 @@ package feathers.display
 	import starling.textures.TextureSmoothing;
 	import starling.utils.MatrixUtil;
 
+	[Exclude(name="numChildren",kind="property")]
+	[Exclude(name="isFlattened",kind="property")]
+	[Exclude(name="addChild",kind="method")]
+	[Exclude(name="addChildAt",kind="method")]
+	[Exclude(name="broadcastEvent",kind="method")]
+	[Exclude(name="broadcastEventWith",kind="method")]
+	[Exclude(name="contains",kind="method")]
+	[Exclude(name="getChildAt",kind="method")]
+	[Exclude(name="getChildByName",kind="method")]
+	[Exclude(name="getChildIndex",kind="method")]
+	[Exclude(name="removeChild",kind="method")]
+	[Exclude(name="removeChildAt",kind="method")]
+	[Exclude(name="removeChildren",kind="method")]
+	[Exclude(name="setChildIndex",kind="method")]
+	[Exclude(name="sortChildren",kind="method")]
+	[Exclude(name="swapChildren",kind="method")]
+	[Exclude(name="swapChildrenAt",kind="method")]
+	[Exclude(name="flatten",kind="method")]
+	[Exclude(name="unflatten",kind="method")]
+
 	/**
 	 * Tiles a texture to fill the specified bounds.
 	 */
-	public class TiledImage extends Sprite
+	public class TiledImage extends Sprite implements IValidating
 	{
+		/**
+		 * @private
+		 */
 		private static const HELPER_POINT:Point = new Point();
+
+		/**
+		 * @private
+		 */
 		private static const HELPER_MATRIX:Matrix = new Matrix();
-		
+
 		/**
 		 * Constructor.
 		 */
@@ -45,11 +77,12 @@ package feathers.display
 			this.addChild(this._batch);
 
 			this.addEventListener(Event.FLATTEN, flattenHandler);
+			this.addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
 		}
 
 		private var _propertiesChanged:Boolean = true;
 		private var _layoutChanged:Boolean = true;
-		
+
 		private var _hitArea:Rectangle;
 
 		private var _batch:QuadBatch;
@@ -57,12 +90,12 @@ package feathers.display
 
 		private var _originalImageWidth:Number;
 		private var _originalImageHeight:Number;
-		
+
 		/**
 		 * @private
 		 */
 		private var _width:Number = NaN;
-		
+
 		/**
 		 * @private
 		 */
@@ -70,7 +103,7 @@ package feathers.display
 		{
 			return this._width;
 		}
-		
+
 		/**
 		 * @private
 		 */
@@ -82,13 +115,14 @@ package feathers.display
 			}
 			this._width = this._hitArea.width = value;
 			this._layoutChanged = true;
+			this.invalidate();
 		}
-		
+
 		/**
 		 * @private
 		 */
 		private var _height:Number = NaN;
-		
+
 		/**
 		 * @private
 		 */
@@ -96,7 +130,7 @@ package feathers.display
 		{
 			return this._height;
 		}
-		
+
 		/**
 		 * @private
 		 */
@@ -108,13 +142,14 @@ package feathers.display
 			}
 			this._height = this._hitArea.height = value;
 			this._layoutChanged = true;
+			this.invalidate();
 		}
-		
+
 		/**
 		 * @private
 		 */
 		private var _texture:Texture;
-		
+
 		/**
 		 * The texture to tile.
 		 *
@@ -127,12 +162,12 @@ package feathers.display
 		{
 			return this._texture;
 		}
-		
+
 		/**
 		 * @private
 		 */
-		public function set texture(value:Texture):void 
-		{ 
+		public function set texture(value:Texture):void
+		{
 			if(value == null)
 			{
 				throw new ArgumentError("Texture cannot be null");
@@ -152,17 +187,26 @@ package feathers.display
 				this._image.texture = value;
 				this._image.readjustSize();
 			}
-			const frame:Rectangle = value.frame;
-			this._originalImageWidth = frame.width;
-			this._originalImageHeight = frame.height;
+			var frame:Rectangle = value.frame;
+			if(!frame)
+			{
+				this._originalImageWidth = value.width;
+				this._originalImageHeight = value.height;
+			}
+			else
+			{
+				this._originalImageWidth = frame.width;
+				this._originalImageHeight = frame.height;
+			}
 			this._layoutChanged = true;
+			this.invalidate();
 		}
-		
+
 		/**
 		 * @private
 		 */
 		private var _smoothing:String = TextureSmoothing.BILINEAR;
-		
+
 		/**
 		 * The smoothing value to pass to the tiled images.
 		 *
@@ -173,17 +217,17 @@ package feathers.display
 		 *
 		 * @default starling.textures.TextureSmoothing.BILINEAR
 		 *
-		 * @see starling.textures.TextureSmoothing
+		 * @see http://doc.starling-framework.org/core/starling/textures/TextureSmoothing.html starling.textures.TextureSmoothing
 		 */
 		public function get smoothing():String
 		{
 			return this._smoothing;
 		}
-		
+
 		/**
 		 * @private
 		 */
-		public function set smoothing(value:String):void 
+		public function set smoothing(value:String):void
 		{
 			if(TextureSmoothing.isValid(value))
 			{
@@ -194,6 +238,7 @@ package feathers.display
 				throw new ArgumentError("Invalid smoothing mode: " + value);
 			}
 			this._propertiesChanged = true;
+			this.invalidate();
 		}
 
 		/**
@@ -227,6 +272,7 @@ package feathers.display
 			}
 			this._color = value;
 			this._propertiesChanged = true;
+			this.invalidate();
 		}
 
 		/**
@@ -261,15 +307,17 @@ package feathers.display
 			}
 			this._useSeparateBatch = value;
 			this._propertiesChanged = true;
+			this.invalidate();
 		}
-		
+
 		/**
 		 * @private
 		 */
 		private var _textureScale:Number = 1;
-		
+
 		/**
-		 * The amount to scale the texture. Useful for DPI changes.
+		 * Scales the texture dimensions during measurement. Useful for UI that
+		 * should scale based on screen density or resolution.
 		 *
 		 * <p>In the following example, the texture scale is changed:</p>
 		 *
@@ -282,7 +330,7 @@ package feathers.display
 		{
 			return this._textureScale;
 		}
-		
+
 		/**
 		 * @private
 		 */
@@ -294,8 +342,37 @@ package feathers.display
 			}
 			this._textureScale = value;
 			this._layoutChanged = true;
+			this.invalidate();
 		}
-		
+
+		/**
+		 * @private
+		 */
+		private var _isValidating:Boolean = false;
+
+		/**
+		 * @private
+		 */
+		private var _isInvalid:Boolean = false;
+
+		/**
+		 * @private
+		 */
+		private var _validationQueue:ValidationQueue;
+
+		/**
+		 * @private
+		 */
+		private var _depth:int = -1;
+
+		/**
+		 * @copy feathers.core.IValidating#depth
+		 */
+		public function get depth():int
+		{
+			return this._depth;
+		}
+
 		/**
 		 * @private
 		 */
@@ -305,10 +382,10 @@ package feathers.display
 			{
 				resultRect = new Rectangle();
 			}
-			
+
 			var minX:Number = Number.MAX_VALUE, maxX:Number = -Number.MAX_VALUE;
 			var minY:Number = Number.MAX_VALUE, maxY:Number = -Number.MAX_VALUE;
-			
+
 			if (targetSpace == this) // optimization
 			{
 				minX = this._hitArea.x;
@@ -344,15 +421,15 @@ package feathers.display
 				minY = minY < HELPER_POINT.y ? minY : HELPER_POINT.y;
 				maxY = maxY > HELPER_POINT.y ? maxY : HELPER_POINT.y;
 			}
-			
+
 			resultRect.x = minX;
 			resultRect.y = minY;
 			resultRect.width  = maxX - minX;
 			resultRect.height = maxY - minY;
-			
+
 			return resultRect;
 		}
-		
+
 		/**
 		 * @private
 		 */
@@ -364,7 +441,7 @@ package feathers.display
 			}
 			return this._hitArea.containsPoint(localPoint) ? this : null;
 		}
-		
+
 		/**
 		 * Set both the width and height in one call.
 		 */
@@ -377,26 +454,35 @@ package feathers.display
 		/**
 		 * @private
 		 */
-		override public function flatten():void
-		{
-			this.validate();
-			super.flatten();
-		}
-
-		/**
-		 * @private
-		 */
 		override public function render(support:RenderSupport, parentAlpha:Number):void
 		{
-			this.validate();
+			if(this._isInvalid)
+			{
+				this.validate();
+			}
 			super.render(support, parentAlpha);
 		}
 
 		/**
-		 * @private
+		 * @copy feathers.core.IValidating#validate()
 		 */
-		protected function validate():void
+		public function validate():void
 		{
+			if(!this._isInvalid)
+			{
+				return;
+			}
+			if(this._isValidating)
+			{
+				if(this._validationQueue)
+				{
+					//we were already validating, and something else told us to
+					//validate. that's bad.
+					this._validationQueue.addControl(this, true);
+				}
+				return;
+			}
+			this._isValidating = true;
 			if(this._propertiesChanged)
 			{
 				this._image.smoothing = this._smoothing;
@@ -407,11 +493,11 @@ package feathers.display
 				this._batch.batchable = !this._useSeparateBatch;
 				this._batch.reset();
 				this._image.scaleX = this._image.scaleY = this._textureScale;
-				const scaledTextureWidth:Number = this._originalImageWidth * this._textureScale;
-				const scaledTextureHeight:Number = this._originalImageHeight * this._textureScale;
-				const xImageCount:int = Math.ceil(this._width / scaledTextureWidth);
-				const yImageCount:int = Math.ceil(this._height / scaledTextureHeight);
-				const imageCount:int = xImageCount * yImageCount;
+				var scaledTextureWidth:Number = this._originalImageWidth * this._textureScale;
+				var scaledTextureHeight:Number = this._originalImageHeight * this._textureScale;
+				var xImageCount:int = Math.ceil(this._width / scaledTextureWidth);
+				var yImageCount:int = Math.ceil(this._height / scaledTextureHeight);
+				var imageCount:int = xImageCount * yImageCount;
 				var xPosition:Number = 0;
 				var yPosition:Number = 0;
 				var nextXPosition:Number = xPosition + scaledTextureWidth;
@@ -454,9 +540,27 @@ package feathers.display
 					}
 				}
 			}
-
 			this._layoutChanged = false;
 			this._propertiesChanged = false;
+			this._isInvalid = false;
+			this._isValidating = false;
+		}
+
+		/**
+		 * @private
+		 */
+		protected function invalidate():void
+		{
+			if(this._isInvalid)
+			{
+				return;
+			}
+			this._isInvalid = true;
+			if(!this._validationQueue)
+			{
+				return;
+			}
+			this._validationQueue.addControl(this, false);
 		}
 
 		/**
@@ -474,6 +578,19 @@ package feathers.display
 		private function flattenHandler(event:Event):void
 		{
 			this.validate();
+		}
+
+		/**
+		 * @private
+		 */
+		private function addedToStageHandler(event:Event):void
+		{
+			this._depth = getDisplayObjectDepthFromStage(this);
+			this._validationQueue = ValidationQueue.forStarling(Starling.current);
+			if(this._isInvalid)
+			{
+				this._validationQueue.addControl(this, false);
+			}
 		}
 
 	}

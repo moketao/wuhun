@@ -1,4 +1,6 @@
 package {
+	import flash.net.SharedObject;
+	
 	import loading.Res;
 
 	public class G {
@@ -17,7 +19,13 @@ package {
 		public static var recharge:String;
 		public static var speed:Number = 8;
 		public static var res:Res = new Res();
-
+		
+		public static function SO(key:String, val:*=null):*
+		{
+			var so:SharedObject = SharedObject.getLocal("wuhun");
+			if(val!=null) so.data[key] = val;
+			return so.data[key];
+		}
 		public function G() {
 		}
 	}

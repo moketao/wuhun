@@ -118,7 +118,7 @@ package starling.utils
         private var mCheckPolicyFile:Boolean;
         private var mKeepAtlasXmls:Boolean;
         private var mKeepFontXmls:Boolean;
-        private var mMaxConnections:int;
+        private var mNumConnections:int;
         private var mVerbose:Boolean;
         private var mQueue:Array;
         
@@ -146,7 +146,7 @@ package starling.utils
             mXmls = new Dictionary();
             mObjects = new Dictionary();
             mByteArrays = new Dictionary();
-            mMaxConnections = 3;
+            mNumConnections = 3;
             mVerbose = true;
             mQueue = [];
         }
@@ -193,8 +193,8 @@ package starling.utils
             if (result == null) result = new <Texture>[];
             
             for each (var name:String in getTextureNames(prefix, sNames))
-                result.push(getTexture(name));
-            
+                result[result.length] = getTexture(name); // avoid 'push'
+
             sNames.length = 0;
             return result;
         }
@@ -533,12 +533,13 @@ package starling.utils
         /** Enqueues a single asset with a custom name that can be used to access it later.
          *  If the asset is a texture, you can also add custom texture options.
          *  
-         *  @param asset:   The asset that will be enqueued; accepts the same objects as the
+         *  @param asset    The asset that will be enqueued; accepts the same objects as the
          *                  'enqueue' method.
-         *  @param name:    The name under which the asset will be found later. If you pass null or
+         *  @param name     The name under which the asset will be found later. If you pass null or
          *                  omit the parameter, it's attempted to generate a name automatically.
-         *  @param options: Custom options that will be used if 'asset' points to texture data.
-         *  @return         the name under which the asset was registered. */
+         *  @param options  Custom options that will be used if 'asset' points to texture data.
+         *  @return         the name with which the asset was registered.
+         */
         public function enqueueWithName(asset:Object, name:String=null,
                                         options:TextureOptions=null):String
         {
@@ -568,7 +569,7 @@ package starling.utils
          *  if you are working with more than one Starling instance, be sure to call
          *  "makeCurrent()" on the appropriate instance before processing the queue.</p>
          *
-         *  @param onProgress: <code>function(ratio:Number):void;</code> 
+         *  @param onProgress <code>function(ratio:Number):void;</code>
          */
         public function loadQueue(onProgress:Function):void
         {
@@ -586,6 +587,9 @@ package starling.utils
             if (mStarling == null || mStarling.context == null)
                 throw new Error("The Starling instance needs to be ready before assets can be loaded.");
 
+            const PROGRESS_PART_ASSETS:Number = 0.9;
+            const PROGRESS_PART_XMLS:Number = 1.0 - PROGRESS_PART_ASSETS;
+
             var i:int;
             var canceled:Boolean = false;
             var xmls:Vector.<XML> = new <XML>[];
@@ -597,7 +601,7 @@ package starling.utils
             for (i=0; i<assetCount; ++i)
                 assetProgress[i] = 0.0;
 
-            for (i=0; i<mMaxConnections; ++i)
+            for (i=0; i<mNumConnections; ++i)
                 loadNextQueueElement();
 
             mQueue.length = 0;
@@ -621,22 +625,22 @@ package starling.utils
                 
                 var onElementProgress:Function = function(progress:Number):void
                 {
-                    updateProgress(index, progress * 0.8); // keep 20 % for completion
+                    updateAssetProgress(index, progress * 0.8); // keep 20 % for completion
                 };
                 var onElementLoaded:Function = function():void
                 {
-                    updateProgress(index, 1.0);
+                    updateAssetProgress(index, 1.0);
                     assetCount--;
 
                     if (assetCount > 0) loadNextQueueElement();
-                    else                finish();
+                    else                processXmls();
                 };
                 
                 processRawAsset(assetInfo.name, assetInfo.asset, assetInfo.options,
                     xmls, onElementProgress, onElementLoaded);
             }
             
-            function updateProgress(index:int, progress:Number):void
+            function updateAssetProgress(index:int, progress:Number):void
             {
                 assetProgress[index] = progress;
 
@@ -646,57 +650,71 @@ package starling.utils
                 for (i=0; i<len; ++i)
                     sum += assetProgress[i];
 
-                onProgress(sum / len * 0.9);
+                onProgress(sum / len * PROGRESS_PART_ASSETS);
             }
             
             function processXmls():void
             {
-                // xmls are processed seperately at the end, because the textures they reference
+                // xmls are processed separately at the end, because the textures they reference
                 // have to be available for other XMLs. Texture atlases are processed first:
                 // that way, their textures can be referenced, too.
                 
                 xmls.sort(function(a:XML, b:XML):int { 
                     return a.localName() == "TextureAtlas" ? -1 : 1; 
                 });
-                
-                for each (var xml:XML in xmls)
+
+                setTimeout(processXml, 1, 0);
+            }
+
+            function processXml(index:int):void
+            {
+                if (canceled) return;
+                else if (index == xmls.length)
                 {
-                    var name:String;
-                    var texture:Texture;
-                    var rootNode:String = xml.localName();
-                    
-                    if (rootNode == "TextureAtlas")
-                    {
-                        name = getName(xml.@imagePath.toString());
-                        texture = getTexture(name);
-                        
-                        if (texture)
-                        {
-                            addTextureAtlas(name, new TextureAtlas(texture, xml));
-
-                            if (mKeepAtlasXmls) addXml(name, xml);
-                            else System.disposeXML(xml);
-                        }
-                        else log("Cannot create atlas: texture '" + name + "' is missing.");
-                    }
-                    else if (rootNode == "font")
-                    {
-                        name = getName(xml.pages.page.@file.toString());
-                        texture = getTexture(name);
-                        
-                        if (texture)
-                        {
-                            log("Adding bitmap font '" + name + "'");
-                            TextField.registerBitmapFont(new BitmapFont(texture, xml), name);
-
-                            if (mKeepFontXmls) addXml(name, xml);
-                            else System.disposeXML(xml);
-                        }
-                        else log("Cannot create bitmap font: texture '" + name + "' is missing.");
-                    }
-                    else
-                        throw new Error("XML contents not recognized: " + rootNode);
+                    finish();
+                    return;
                 }
+
+                var name:String;
+                var texture:Texture;
+                var xml:XML = xmls[index];
+                var rootNode:String = xml.localName();
+                var xmlProgress:Number = (index + 1) / (xmls.length + 1);
+
+                if (rootNode == "TextureAtlas")
+                {
+                    name = getName(xml.@imagePath.toString());
+                    texture = getTexture(name);
+
+                    if (texture)
+                    {
+                        addTextureAtlas(name, new TextureAtlas(texture, xml));
+
+                        if (mKeepAtlasXmls) addXml(name, xml);
+                        else System.disposeXML(xml);
+                    }
+                    else log("Cannot create atlas: texture '" + name + "' is missing.");
+                }
+                else if (rootNode == "font")
+                {
+                    name = getName(xml.pages.page.@file.toString());
+                    texture = getTexture(name);
+
+                    if (texture)
+                    {
+                        log("Adding bitmap font '" + name + "'");
+                        TextField.registerBitmapFont(new BitmapFont(texture, xml), name);
+
+                        if (mKeepFontXmls) addXml(name, xml);
+                        else System.disposeXML(xml);
+                    }
+                    else log("Cannot create bitmap font: texture '" + name + "' is missing.");
+                }
+                else
+                    throw new Error("XML contents not recognized: " + rootNode);
+
+                onProgress(PROGRESS_PART_ASSETS + PROGRESS_PART_XMLS * xmlProgress);
+                setTimeout(processXml, 1, index + 1);
             }
             
             function cancel():void
@@ -708,26 +726,21 @@ package starling.utils
 
             function finish():void
             {
+                // now would be a good time for a clean-up
+                System.pauseForGCIfCollectionImminent(0);
+                System.gc();
+
                 // We dance around the final "onProgress" call with some "setTimeout" calls here
                 // to make sure the progress bar gets the chance to be rendered. Otherwise, all
                 // would happen in one frame.
 
                 setTimeout(function():void
                 {
-                    processXmls();
-
-                    setTimeout(function():void
+                    if (!canceled)
                     {
-                        // now would be a good time for a clean-up
-                        System.pauseForGCIfCollectionImminent(0);
-                        System.gc();
-
-                        if (!canceled)
-                        {
-                            cancel();
-                            onProgress(1.0);
-                        }
-                    }, 1);
+                        cancel();
+                        onProgress(1.0);
+                    }
                 }, 1);
             }
         }
@@ -1115,8 +1128,8 @@ package starling.utils
             
             for (var name:String in dictionary)
                 if (name.indexOf(prefix) == 0)
-                    result.push(name);
-            
+                    result[result.length] = name; // avoid 'push'
+
             result.sort(Array.CASEINSENSITIVE);
             return result;
         }
@@ -1219,7 +1232,7 @@ package starling.utils
 
         /** The maximum number of parallel connections that are spawned when loading the queue.
          *  More connections can reduce loading times, but require more memory. @default 3. */
-        public function get maxConnections():int { return mMaxConnections; }
-        public function set maxConnections(value:int):void { mMaxConnections = value; }
+        public function get numConnections():int { return mNumConnections; }
+        public function set numConnections(value:int):void { mNumConnections = value; }
     }
 }

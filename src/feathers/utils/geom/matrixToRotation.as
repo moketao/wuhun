@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -12,7 +12,7 @@ package feathers.utils.geom
 	/**
 	 * Extracts the rotation value (in radians) from a <code>flash.geom.Matrix</code>
 	 *
-	 * @see flash.geom.Matrix
+	 * @see http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/geom/Matrix.html flash.geom.Matrix
 	 */
 	public function matrixToRotation(matrix:Matrix):Number
 	{

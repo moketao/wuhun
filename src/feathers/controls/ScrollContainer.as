@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -8,8 +8,10 @@ accordance with the terms of the accompanying license agreement.
 package feathers.controls
 {
 	import feathers.controls.supportClasses.LayoutViewPort;
+	import feathers.core.IFocusContainer;
 	import feathers.layout.ILayout;
 	import feathers.layout.IVirtualLayout;
+	import feathers.skins.IStyleProvider;
 
 	import starling.display.DisplayObject;
 	import starling.display.DisplayObjectContainer;
@@ -17,6 +19,21 @@ package feathers.controls
 
 	/**
 	 * Dispatched when the container is scrolled.
+	 *
+	 * <p>The properties of the event object have the following values:</p>
+	 * <table class="innertable">
+	 * <tr><th>Property</th><th>Value</th></tr>
+	 * <tr><td><code>bubbles</code></td><td>false</td></tr>
+	 * <tr><td><code>currentTarget</code></td><td>The Object that defines the
+	 *   event listener that handles the event. For example, if you use
+	 *   <code>myButton.addEventListener()</code> to register an event listener,
+	 *   myButton is the value of the <code>currentTarget</code>.</td></tr>
+	 * <tr><td><code>data</code></td><td>null</td></tr>
+	 * <tr><td><code>target</code></td><td>The Object that dispatched the event;
+	 *   it is not always the Object listening for the event. Use the
+	 *   <code>currentTarget</code> property to always access the Object
+	 *   listening for the event.</td></tr>
+	 * </table>
 	 *
 	 * @eventType starling.events.Event.SCROLL
 	 */
@@ -50,7 +67,7 @@ package feathers.controls
 	 * @see http://wiki.starling-framework.org/feathers/scroll-container
 	 * @see feathers.controls.LayoutGroup
 	 */
-	public class ScrollContainer extends Scroller
+	public class ScrollContainer extends Scroller implements IScrollContainer, IFocusContainer
 	{
 		/**
 		 * @private
@@ -58,26 +75,38 @@ package feathers.controls
 		protected static const INVALIDATION_FLAG_MXML_CONTENT:String = "mxmlContent";
 
 		/**
-		 * An alternate name to use with <code>ScrollContainer</code> to allow a
-		 * theme to give it a toolbar style. If a theme does not provide a skin
-		 * for the toolbar style, the theme will automatically fall back to
-		 * using the default scroll container skin.
+		 * An alternate style name to use with <code>ScrollContainer</code> to
+		 * allow a theme to give it a toolbar style. If a theme does not provide
+		 * a style for the toolbar container, the theme will automatically fall
+		 * back to using the default scroll container skin.
 		 *
-		 * <p>An alternate name should always be added to a component's
-		 * <code>nameList</code> before the component is added to the stage for
-		 * the first time. If it is added later, it will be ignored.</p>
+		 * <p>An alternate style name should always be added to a component's
+		 * <code>styleNameList</code> before the component is initialized. If
+		 * the style name is added later, it will be ignored.</p>
 		 *
 		 * <p>In the following example, the toolbar style is applied to a scroll
 		 * container:</p>
 		 *
 		 * <listing version="3.0">
 		 * var container:ScrollContainer = new ScrollContainer();
-		 * container.nameList.add( ScrollContainer.ALTERNATE_NAME_TOOLBAR );
+		 * container.styleNameList.add( ScrollContainer.ALTERNATE_STYLE_NAME_TOOLBAR );
 		 * this.addChild( container );</listing>
 		 *
-		 * @see feathers.core.IFeathersControl#nameList
+		 * @see feathers.core.FeathersControl#styleNameList
 		 */
-		public static const ALTERNATE_NAME_TOOLBAR:String = "feathers-toolbar-scroll-container";
+		public static const ALTERNATE_STYLE_NAME_TOOLBAR:String = "feathers-toolbar-scroll-container";
+
+		/**
+		 * DEPRECATED: Replaced by <code>ScrollContainer.ALTERNATE_STYLE_NAME_TOOLBAR</code>.
+		 *
+		 * <p><strong>DEPRECATION WARNING:</strong> This property is deprecated
+		 * starting with Feathers 2.1. It will be removed in a future version of
+		 * Feathers according to the standard
+		 * <a href="http://wiki.starling-framework.org/feathers/deprecation-policy">Feathers deprecation policy</a>.</p>
+		 *
+		 * @see ScrollContainer#ALTERNATE_STYLE_NAME_TOOLBAR
+		 */
+		public static const ALTERNATE_NAME_TOOLBAR:String = ALTERNATE_STYLE_NAME_TOOLBAR;
 
 		/**
 		 * @copy feathers.controls.Scroller#SCROLL_POLICY_AUTO
@@ -125,6 +154,20 @@ package feathers.controls
 		public static const SCROLL_BAR_DISPLAY_MODE_NONE:String = "none";
 
 		/**
+		 * The vertical scroll bar will be positioned on the right.
+		 *
+		 * @see feathers.controls.Scroller#verticalScrollBarPosition
+		 */
+		public static const VERTICAL_SCROLL_BAR_POSITION_RIGHT:String = "right";
+
+		/**
+		 * The vertical scroll bar will be positioned on the left.
+		 *
+		 * @see feathers.controls.Scroller#verticalScrollBarPosition
+		 */
+		public static const VERTICAL_SCROLL_BAR_POSITION_LEFT:String = "left";
+
+		/**
 		 * @copy feathers.controls.Scroller#INTERACTION_MODE_TOUCH
 		 *
 		 * @see feathers.controls.Scroller#interactionMode
@@ -146,18 +189,66 @@ package feathers.controls
 		public static const INTERACTION_MODE_TOUCH_AND_SCROLL_BARS:String = "touchAndScrollBars";
 
 		/**
+		 * @copy feathers.controls.Scroller#MOUSE_WHEEL_SCROLL_DIRECTION_VERTICAL
+		 *
+		 * @see feathers.controls.Scroller#verticalMouseWheelScrollDirection
+		 */
+		public static const MOUSE_WHEEL_SCROLL_DIRECTION_VERTICAL:String = "vertical";
+
+		/**
+		 * @copy feathers.controls.Scroller#MOUSE_WHEEL_SCROLL_DIRECTION_HORIZONTAL
+		 *
+		 * @see feathers.controls.Scroller#verticalMouseWheelScrollDirection
+		 */
+		public static const MOUSE_WHEEL_SCROLL_DIRECTION_HORIZONTAL:String = "horizontal";
+
+		/**
+		 * @copy feathers.controls.Scroller#DECELERATION_RATE_NORMAL
+		 *
+		 * @see feathers.controls.Scroller#decelerationRate
+		 */
+		public static const DECELERATION_RATE_NORMAL:Number = 0.998;
+
+		/**
+		 * @copy feathers.controls.Scroller#DECELERATION_RATE_FAST
+		 *
+		 * @see feathers.controls.Scroller#decelerationRate
+		 */
+		public static const DECELERATION_RATE_FAST:Number = 0.99;
+
+		/**
+		 * The container will auto size itself to fill the entire stage.
+		 *
+		 * @see #autoSizeMode
+		 */
+		public static const AUTO_SIZE_MODE_STAGE:String = "stage";
+
+		/**
+		 * The container will auto size itself to fit its content.
+		 *
+		 * @see #autoSizeMode
+		 */
+		public static const AUTO_SIZE_MODE_CONTENT:String = "content";
+
+		/**
+		 * The default <code>IStyleProvider</code> for all <code>ScrollContainer</code>
+		 * components.
+		 *
+		 * @default null
+		 * @see feathers.core.FeathersControl#styleProvider
+		 */
+		public static var globalStyleProvider:IStyleProvider;
+
+		/**
 		 * Constructor.
 		 */
 		public function ScrollContainer()
 		{
-			const oldDisplayListBypassEnabled:Boolean = this.displayListBypassEnabled;
-			this.displayListBypassEnabled = false;
-
 			super();
 			this.layoutViewPort = new LayoutViewPort();
 			this.viewPort = this.layoutViewPort;
-
-			this.displayListBypassEnabled = oldDisplayListBypassEnabled;
+			this.addEventListener(Event.ADDED_TO_STAGE, scrollContainer_addedToStageHandler);
+			this.addEventListener(Event.REMOVED_FROM_STAGE, scrollContainer_removedFromStageHandler);
 		}
 
 		/**
@@ -171,6 +262,39 @@ package feathers.controls
 		 * @private
 		 */
 		protected var layoutViewPort:LayoutViewPort;
+
+		/**
+		 * @private
+		 */
+		override protected function get defaultStyleProvider():IStyleProvider
+		{
+			return ScrollContainer.globalStyleProvider;
+		}
+
+		/**
+		 * @private
+		 */
+		protected var _isChildFocusEnabled:Boolean = true;
+
+		/**
+		 * @copy feathers.core.IFocusContainer#isChildFocusEnabled
+		 *
+		 * @default true
+		 *
+		 * @see #isFocusEnabled
+		 */
+		public function get isChildFocusEnabled():Boolean
+		{
+			return this._isEnabled && this._isChildFocusEnabled;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set isChildFocusEnabled(value:Boolean):void
+		{
+			this._isChildFocusEnabled = value;
+		}
 
 		/**
 		 * @private
@@ -212,6 +336,56 @@ package feathers.controls
 		/**
 		 * @private
 		 */
+		protected var _autoSizeMode:String = AUTO_SIZE_MODE_CONTENT;
+
+		[Inspectable(type="String",enumeration="stage,content")]
+		/**
+		 * Determines how the container will set its own size when its
+		 * dimensions (width and height) aren't set explicitly.
+		 *
+		 * <p>In the following example, the container will be sized to
+		 * match the stage:</p>
+		 *
+		 * <listing version="3.0">
+		 * container.autoSizeMode = ScrollContainer.AUTO_SIZE_MODE_STAGE;</listing>
+		 *
+		 * @default ScrollContainer.AUTO_SIZE_MODE_CONTENT
+		 *
+		 * @see #AUTO_SIZE_MODE_STAGE
+		 * @see #AUTO_SIZE_MODE_CONTENT
+		 */
+		public function get autoSizeMode():String
+		{
+			return this._autoSizeMode;
+		}
+
+		/**
+		 * @private
+		 */
+		public function set autoSizeMode(value:String):void
+		{
+			if(this._autoSizeMode == value)
+			{
+				return;
+			}
+			this._autoSizeMode = value;
+			if(this.stage)
+			{
+				if(this._autoSizeMode == AUTO_SIZE_MODE_STAGE)
+				{
+					this.stage.addEventListener(Event.RESIZE, stage_resizeHandler);
+				}
+				else
+				{
+					this.stage.removeEventListener(Event.RESIZE, stage_resizeHandler);
+				}
+			}
+			this.invalidate(INVALIDATION_FLAG_SIZE);
+		}
+
+		/**
+		 * @private
+		 */
 		protected var _mxmlContentIsReady:Boolean = false;
 
 		/**
@@ -239,7 +413,7 @@ package feathers.controls
 			}
 			if(this._mxmlContent && this._mxmlContentIsReady)
 			{
-				const childCount:int = this._mxmlContent.length;
+				var childCount:int = this._mxmlContent.length;
 				for(var i:int = 0; i < childCount; i++)
 				{
 					var child:DisplayObject = DisplayObject(this._mxmlContent[i]);
@@ -249,28 +423,6 @@ package feathers.controls
 			this._mxmlContent = value;
 			this._mxmlContentIsReady = false;
 			this.invalidate(INVALIDATION_FLAG_MXML_CONTENT);
-		}
-
-		/**
-		 * @private
-		 */
-		override public function set backgroundSkin(value:DisplayObject):void
-		{
-			const oldDisplayListBypassEnabled:Boolean = this.displayListBypassEnabled;
-			this.displayListBypassEnabled = false;
-			super.backgroundSkin = value;
-			this.displayListBypassEnabled = oldDisplayListBypassEnabled;
-		}
-
-		/**
-		 * @private
-		 */
-		override public function set backgroundDisabledSkin(value:DisplayObject):void
-		{
-			const oldDisplayListBypassEnabled:Boolean = this.displayListBypassEnabled;
-			this.displayListBypassEnabled = false;
-			super.backgroundDisabledSkin = value;
-			this.displayListBypassEnabled = oldDisplayListBypassEnabled;
 		}
 
 		/**
@@ -286,6 +438,18 @@ package feathers.controls
 		}
 
 		/**
+		 * @inheritDoc
+		 */
+		public function get numRawChildren():int
+		{
+			var oldBypass:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			var result:int = super.numChildren;
+			this.displayListBypassEnabled = oldBypass;
+			return result;
+		}
+
+		/**
 		 * @private
 		 */
 		override public function getChildByName(name:String):DisplayObject
@@ -295,6 +459,18 @@ package feathers.controls
 				return super.getChildByName(name);
 			}
 			return DisplayObjectContainer(this.viewPort).getChildByName(name);
+		}
+
+		/**
+		 * @inheritDoc
+		 */
+		public function getRawChildByName(name:String):DisplayObject
+		{
+			var oldBypass:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			var child:DisplayObject = super.getChildByName(name);
+			this.displayListBypassEnabled = oldBypass;
+			return child;
 		}
 
 		/**
@@ -310,6 +486,37 @@ package feathers.controls
 		}
 
 		/**
+		 * @inheritDoc
+		 */
+		public function getRawChildAt(index:int):DisplayObject
+		{
+			var oldBypass:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			var child:DisplayObject = super.getChildAt(index);
+			this.displayListBypassEnabled = oldBypass;
+			return child;
+		}
+
+		/**
+		 * @inheritDoc
+		 */
+		public function addRawChild(child:DisplayObject):DisplayObject
+		{
+			var oldBypass:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			if(child.parent == this)
+			{
+				super.setChildIndex(child, super.numChildren);
+			}
+			else
+			{
+				child = super.addChildAt(child, super.numChildren);
+			}
+			this.displayListBypassEnabled = oldBypass;
+			return child;
+		}
+
+		/**
 		 * @private
 		 */
 		override public function addChildAt(child:DisplayObject, index:int):DisplayObject
@@ -318,7 +525,37 @@ package feathers.controls
 			{
 				return super.addChildAt(child, index);
 			}
-			return DisplayObjectContainer(this.viewPort).addChildAt(child, index);
+			var result:DisplayObject = DisplayObjectContainer(this.viewPort).addChildAt(child, index);
+			this.invalidate(INVALIDATION_FLAG_SIZE);
+			return result;
+		}
+
+		/**
+		 * @inheritDoc
+		 */
+		public function addRawChildAt(child:DisplayObject, index:int):DisplayObject
+		{
+			var oldBypass:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			child = super.addChildAt(child, index);
+			this.displayListBypassEnabled = oldBypass;
+			return child;
+		}
+
+		/**
+		 * @inheritDoc
+		 */
+		public function removeRawChild(child:DisplayObject, dispose:Boolean = false):DisplayObject
+		{
+			var oldBypass:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			var index:int = super.getChildIndex(child);
+			if(index >= 0)
+			{
+				super.removeChildAt(index, dispose);
+			}
+			this.displayListBypassEnabled = oldBypass;
+			return child;
 		}
 
 		/**
@@ -330,7 +567,21 @@ package feathers.controls
 			{
 				return super.removeChildAt(index, dispose);
 			}
-			return DisplayObjectContainer(this.viewPort).removeChildAt(index, dispose);
+			var result:DisplayObject = DisplayObjectContainer(this.viewPort).removeChildAt(index, dispose);
+			this.invalidate(INVALIDATION_FLAG_SIZE);
+			return result;
+		}
+
+		/**
+		 * @inheritDoc
+		 */
+		public function removeRawChildAt(index:int, dispose:Boolean = false):DisplayObject
+		{
+			var oldBypass:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			var child:DisplayObject =  super.removeChildAt(index, dispose);
+			this.displayListBypassEnabled = oldBypass;
+			return child;
 		}
 
 		/**
@@ -343,6 +594,17 @@ package feathers.controls
 				return super.getChildIndex(child);
 			}
 			return DisplayObjectContainer(this.viewPort).getChildIndex(child);
+		}
+
+		/**
+		 * @inheritDoc
+		 */
+		public function getRawChildIndex(child:DisplayObject):int
+		{
+			var oldBypass:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			return super.getChildIndex(child);
+			this.displayListBypassEnabled = oldBypass;
 		}
 
 		/**
@@ -359,6 +621,34 @@ package feathers.controls
 		}
 
 		/**
+		 * @inheritDoc
+		 */
+		public function setRawChildIndex(child:DisplayObject, index:int):void
+		{
+			var oldBypass:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			super.setChildIndex(child, index);
+			this.displayListBypassEnabled = oldBypass;
+		}
+
+		/**
+		 * @inheritDoc
+		 */
+		public function swapRawChildren(child1:DisplayObject, child2:DisplayObject):void
+		{
+			var index1:int = this.getRawChildIndex(child1);
+			var index2:int = this.getRawChildIndex(child2);
+			if(index1 < 0 || index2 < 0)
+			{
+				throw new ArgumentError("Not a child of this container");
+			}
+			var oldBypass:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			this.swapRawChildrenAt(index1, index2);
+			this.displayListBypassEnabled = oldBypass;
+		}
+
+		/**
 		 * @private
 		 */
 		override public function swapChildrenAt(index1:int, index2:int):void
@@ -369,6 +659,17 @@ package feathers.controls
 				return;
 			}
 			DisplayObjectContainer(this.viewPort).swapChildrenAt(index1, index2);
+		}
+
+		/**
+		 * @inheritDoc
+		 */
+		public function swapRawChildrenAt(index1:int, index2:int):void
+		{
+			var oldBypass:Boolean = this.displayListBypassEnabled;
+			this.displayListBypassEnabled = false;
+			super.swapChildrenAt(index1, index2);
+			this.displayListBypassEnabled = oldBypass;
 		}
 
 		/**
@@ -385,25 +686,14 @@ package feathers.controls
 		}
 
 		/**
-		 * @private
+		 * @inheritDoc
 		 */
-		override public function dispatchEvent(event:Event):void
+		public function sortRawChildren(compareFunction:Function):void
 		{
-			const oldDisplayListBypassEnabled:Boolean = this.displayListBypassEnabled;
-			this.displayListBypassEnabled = true;
-			super.dispatchEvent(event);
-			this.displayListBypassEnabled = oldDisplayListBypassEnabled;
-		}
-
-		/**
-		 * @private
-		 */
-		override public function validate():void
-		{
-			const oldDisplayListBypassEnabled:Boolean = this.displayListBypassEnabled;
+			var oldBypass:Boolean = this.displayListBypassEnabled;
 			this.displayListBypassEnabled = false;
-			super.validate();
-			this.displayListBypassEnabled = oldDisplayListBypassEnabled;
+			super.sortChildren(compareFunction);
+			this.displayListBypassEnabled = oldBypass;
 		}
 
 		/**
@@ -434,15 +724,20 @@ package feathers.controls
 		 */
 		override protected function draw():void
 		{
-			const sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
-			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
-			const stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
-			const layoutInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_LAYOUT);
-			const mxmlContentInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_MXML_CONTENT);
+			var sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
+			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
+			var stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
+			var layoutInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_LAYOUT);
+			var mxmlContentInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_MXML_CONTENT);
 
 			if(mxmlContentInvalid)
 			{
 				this.refreshMXMLContent();
+			}
+
+			if(sizeInvalid)
+			{
+				this.layoutViewPort.autoSizeMode = this._autoSizeMode;
 			}
 
 			if(layoutInvalid)
@@ -466,13 +761,40 @@ package feathers.controls
 			{
 				return;
 			}
-			const childCount:int = this._mxmlContent.length;
+			var childCount:int = this._mxmlContent.length;
 			for(var i:int = 0; i < childCount; i++)
 			{
 				var child:DisplayObject = DisplayObject(this._mxmlContent[i]);
 				this.addChild(child);
 			}
 			this._mxmlContentIsReady = true;
+		}
+
+		/**
+		 * @private
+		 */
+		protected function scrollContainer_addedToStageHandler(event:Event):void
+		{
+			if(this._autoSizeMode == AUTO_SIZE_MODE_STAGE)
+			{
+				this.stage.addEventListener(Event.RESIZE, stage_resizeHandler);
+			}
+		}
+
+		/**
+		 * @private
+		 */
+		protected function scrollContainer_removedFromStageHandler(event:Event):void
+		{
+			this.stage.removeEventListener(Event.RESIZE, stage_resizeHandler);
+		}
+
+		/**
+		 * @private
+		 */
+		protected function stage_resizeHandler(event:Event):void
+		{
+			this.invalidate(INVALIDATION_FLAG_SIZE);
 		}
 	}
 }

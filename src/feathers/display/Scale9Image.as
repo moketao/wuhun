@@ -1,13 +1,16 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
 */
 package feathers.display
 {
+	import feathers.core.IValidating;
+	import feathers.core.ValidationQueue;
 	import feathers.textures.Scale9Textures;
+	import feathers.utils.display.getDisplayObjectDepthFromStage;
 
 	import flash.errors.IllegalOperationError;
 	import flash.geom.Matrix;
@@ -15,13 +18,35 @@ package feathers.display
 	import flash.geom.Rectangle;
 
 	import starling.core.RenderSupport;
+	import starling.core.Starling;
 	import starling.display.DisplayObject;
 	import starling.display.Image;
 	import starling.display.QuadBatch;
 	import starling.display.Sprite;
 	import starling.events.Event;
+	import starling.textures.Texture;
 	import starling.textures.TextureSmoothing;
 	import starling.utils.MatrixUtil;
+
+	[Exclude(name="numChildren",kind="property")]
+	[Exclude(name="isFlattened",kind="property")]
+	[Exclude(name="addChild",kind="method")]
+	[Exclude(name="addChildAt",kind="method")]
+	[Exclude(name="broadcastEvent",kind="method")]
+	[Exclude(name="broadcastEventWith",kind="method")]
+	[Exclude(name="contains",kind="method")]
+	[Exclude(name="getChildAt",kind="method")]
+	[Exclude(name="getChildByName",kind="method")]
+	[Exclude(name="getChildIndex",kind="method")]
+	[Exclude(name="removeChild",kind="method")]
+	[Exclude(name="removeChildAt",kind="method")]
+	[Exclude(name="removeChildren",kind="method")]
+	[Exclude(name="setChildIndex",kind="method")]
+	[Exclude(name="sortChildren",kind="method")]
+	[Exclude(name="swapChildren",kind="method")]
+	[Exclude(name="swapChildrenAt",kind="method")]
+	[Exclude(name="flatten",kind="method")]
+	[Exclude(name="unflatten",kind="method")]
 
 	/**
 	 * Scales an image with nine regions to maintain the aspect ratio of the
@@ -29,7 +54,7 @@ package feathers.display
 	 * left and right regions scale vertically. The center region stretches in
 	 * both directions to fill the remaining space.
 	 */
-	public class Scale9Image extends Sprite
+	public class Scale9Image extends Sprite implements IValidating
 	{
 		/**
 		 * @private
@@ -62,6 +87,7 @@ package feathers.display
 			this.addChild(this._batch);
 
 			this.addEventListener(Event.FLATTEN, flattenHandler);
+			this.addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
 		}
 
 		/**
@@ -116,9 +142,15 @@ package feathers.display
 				return;
 			}
 			this._textures = value;
-			this._frame = this._textures.texture.frame;
+			var texture:Texture = this._textures.texture;
+			this._frame = texture.frame;
+			if(!this._frame)
+			{
+				this._frame = new Rectangle(0, 0, texture.width, texture.height);
+			}
 			this._layoutChanged = true;
 			this._renderingChanged = true;
+			this.invalidate();
 		}
 
 		/**
@@ -145,6 +177,7 @@ package feathers.display
 			}
 			this._width = this._hitArea.width = value;
 			this._layoutChanged = true;
+			this.invalidate();
 		}
 
 		/**
@@ -171,6 +204,7 @@ package feathers.display
 			}
 			this._height = this._hitArea.height = value;
 			this._layoutChanged = true;
+			this.invalidate();
 		}
 
 		/**
@@ -179,7 +213,8 @@ package feathers.display
 		private var _textureScale:Number = 1;
 
 		/**
-		 * The amount to scale the texture. Useful for DPI changes.
+		 * Scales the texture dimensions during measurement. Useful for UI that
+		 * should scale based on screen density or resolution.
 		 *
 		 * <p>In the following example, the texture scale is changed:</p>
 		 *
@@ -204,6 +239,7 @@ package feathers.display
 			}
 			this._textureScale = value;
 			this._layoutChanged = true;
+			this.invalidate();
 		}
 
 		/**
@@ -221,7 +257,7 @@ package feathers.display
 		 *
 		 * @default starling.textures.TextureSmoothing.BILINEAR
 		 *
-		 * @see starling.textures.TextureSmoothing
+		 * @see http://doc.starling-framework.org/core/starling/textures/TextureSmoothing.html starling.textures.TextureSmoothing
 		 */
 		public function get smoothing():String
 		{
@@ -239,6 +275,7 @@ package feathers.display
 			}
 			this._smoothing = value;
 			this._propertiesChanged = true;
+			this.invalidate();
 		}
 
 		/**
@@ -272,6 +309,7 @@ package feathers.display
 			}
 			this._color = value;
 			this._propertiesChanged = true;
+			this.invalidate();
 		}
 
 		/**
@@ -306,6 +344,7 @@ package feathers.display
 			}
 			this._useSeparateBatch = value;
 			this._renderingChanged = true;
+			this.invalidate();
 		}
 
 		/**
@@ -317,6 +356,34 @@ package feathers.display
 		 * @private
 		 */
 		private var _batch:QuadBatch;
+
+		/**
+		 * @private
+		 */
+		private var _isValidating:Boolean = false;
+
+		/**
+		 * @private
+		 */
+		private var _isInvalid:Boolean = false;
+
+		/**
+		 * @private
+		 */
+		private var _validationQueue:ValidationQueue;
+
+		/**
+		 * @private
+		 */
+		private var _depth:int = -1;
+
+		/**
+		 * @copy feathers.core.IValidating#depth
+		 */
+		public function get depth():int
+		{
+			return this._depth;
+		}
 
 		/**
 		 * @private
@@ -390,37 +457,35 @@ package feathers.display
 		/**
 		 * @private
 		 */
-		override public function flatten():void
-		{
-			this.validate();
-			super.flatten();
-		}
-
-		/**
-		 * @private
-		 */
 		override public function render(support:RenderSupport, parentAlpha:Number):void
 		{
-			this.validate();
+			if(this._isInvalid)
+			{
+				this.validate();
+			}
 			super.render(support, parentAlpha);
 		}
 
 		/**
-		 * Readjusts the dimensions of the image according to its current
-		 * textures. Call this method to synchronize image and texture size
-		 * after assigning textures with a different size.
+		 * @copy feathers.core.IValidating#validate()
 		 */
-		public function readjustSize():void
+		public function validate():void
 		{
-			this.width = this._frame.width * this._textureScale;
-			this.height = this._frame.height * this._textureScale;
-		}
-
-		/**
-		 * @private
-		 */
-		private function validate():void
-		{
+			if(!this._isInvalid)
+			{
+				return;
+			}
+			if(this._isValidating)
+			{
+				if(this._validationQueue)
+				{
+					//we were already validating, and something else told us to
+					//validate. that's bad.
+					this._validationQueue.addControl(this, true);
+				}
+				return;
+			}
+			this._isValidating = true;
 			if(this._propertiesChanged || this._layoutChanged || this._renderingChanged)
 			{
 				this._batch.batchable = !this._useSeparateBatch;
@@ -428,30 +493,37 @@ package feathers.display
 
 				if(!helperImage)
 				{
-					helperImage = new Image(this._textures.topLeft);
+					//because Scale9Textures enforces it, we know for sure that
+					//this texture will have a size greater than zero, so there
+					//won't be an error from Quad.
+					helperImage = new Image(this._textures.middleCenter);
 				}
 				helperImage.smoothing = this._smoothing;
 				helperImage.color = this._color;
 
-				const grid:Rectangle = this._textures.scale9Grid;
+				var grid:Rectangle = this._textures.scale9Grid;
 				var scaledLeftWidth:Number = grid.x * this._textureScale;
-				var scaledTopHeight:Number = grid.y * this._textureScale;
 				var scaledRightWidth:Number = (this._frame.width - grid.x - grid.width) * this._textureScale;
+				var sumLeftAndRight:Number = scaledLeftWidth + scaledRightWidth;
+				if(sumLeftAndRight > this._width)
+				{
+					var distortionScale:Number = (this._width / sumLeftAndRight);
+					scaledLeftWidth *= distortionScale;
+					scaledRightWidth *= distortionScale;
+					sumLeftAndRight + scaledLeftWidth + scaledRightWidth;
+				}
+				var scaledCenterWidth:Number = this._width - sumLeftAndRight;
+				var scaledTopHeight:Number = grid.y * this._textureScale;
 				var scaledBottomHeight:Number = (this._frame.height - grid.y - grid.height) * this._textureScale;
-				const scaledCenterWidth:Number = this._width - scaledLeftWidth - scaledRightWidth;
-				const scaledMiddleHeight:Number = this._height - scaledTopHeight - scaledBottomHeight;
-				if(scaledCenterWidth < 0)
+				var sumTopAndBottom:Number = scaledTopHeight + scaledBottomHeight;
+				if(sumTopAndBottom > this._height)
 				{
-					var offset:Number = scaledCenterWidth / 2;
-					scaledLeftWidth += offset;
-					scaledRightWidth += offset;
+					distortionScale = (this._height / sumTopAndBottom);
+					scaledTopHeight *= distortionScale;
+					scaledBottomHeight *= distortionScale;
+					sumTopAndBottom = scaledTopHeight + scaledBottomHeight;
 				}
-				if(scaledMiddleHeight < 0)
-				{
-					offset = scaledMiddleHeight / 2;
-					scaledTopHeight += offset;
-					scaledBottomHeight += offset;
-				}
+				var scaledMiddleHeight:Number = this._height - sumTopAndBottom;
 
 				if(scaledTopHeight > 0)
 				{
@@ -565,6 +637,36 @@ package feathers.display
 			this._propertiesChanged = false;
 			this._layoutChanged = false;
 			this._renderingChanged = false;
+			this._isInvalid = false;
+			this._isValidating = false;
+		}
+
+		/**
+		 * Readjusts the dimensions of the image according to its current
+		 * textures. Call this method to synchronize image and texture size
+		 * after assigning textures with a different size.
+		 */
+		public function readjustSize():void
+		{
+			this.width = this._frame.width * this._textureScale;
+			this.height = this._frame.height * this._textureScale;
+		}
+
+		/**
+		 * @private
+		 */
+		protected function invalidate():void
+		{
+			if(this._isInvalid)
+			{
+				return;
+			}
+			this._isInvalid = true;
+			if(!this._validationQueue)
+			{
+				return;
+			}
+			this._validationQueue.addControl(this, false);
 		}
 
 		/**
@@ -573,6 +675,19 @@ package feathers.display
 		private function flattenHandler(event:Event):void
 		{
 			this.validate();
+		}
+
+		/**
+		 * @private
+		 */
+		private function addedToStageHandler(event:Event):void
+		{
+			this._depth = getDisplayObjectDepthFromStage(this);
+			this._validationQueue = ValidationQueue.forStarling(Starling.current);
+			if(this._isInvalid)
+			{
+				this._validationQueue.addControl(this, false);
+			}
 		}
 	}
 }

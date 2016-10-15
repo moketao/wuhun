@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<actionScriptProperties analytics="false" mainApplicationPath="main2/Main2.as" projectUUID="b461b415-b905-4675-823b-d312a124cb3e" version="11">
-  <compiler additionalCompilerArguments="-locale en_US -inline" advancedTelemetry="true" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="false" htmlExpressInstall="true" htmlGenerate="true" htmlHistoryManagement="true" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderLocation="D:/xampp/htdocs/xys" outputFolderPath="bin-debug" removeUnusedRSL="true" rootURL="http://localhost/xys" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="false" useDebugRSLSwfs="true" useFlashSDK="true" verifyDigests="true" warn="true">
+<actionScriptProperties analytics="false" mainApplicationPath="Main.as" projectUUID="b461b415-b905-4675-823b-d312a124cb3e" version="11">
+  <compiler additionalCompilerArguments="-locale en_US -inline" advancedTelemetry="false" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="false" htmlExpressInstall="true" htmlGenerate="true" htmlHistoryManagement="true" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="binnew" removeUnusedRSL="true" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="false" useDebugRSLSwfs="true" useFlashSDK="true" verifyDigests="true" warn="true">
     <compilerSourcePath>
       <compilerSourcePathEntry kind="1" linkType="1" path="libsrc"/>
     </compilerSourcePath>
@@ -35,7 +35,7 @@
     <sourceAttachmentPath/>
   </compiler>
   <applications>
-    <application path="main2/Main2.as"/>
+    <application path="Test.as"/>
     <application path="Main.as"/>
   </applications>
   <modules/>

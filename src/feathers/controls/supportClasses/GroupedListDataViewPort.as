@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -37,7 +37,7 @@ package feathers.controls.supportClasses
 	 * @private
 	 * Used internally by GroupedList. Not meant to be used on its own.
 	 */
-	public final class GroupedListDataViewPort extends FeathersControl implements IViewPort
+	public class GroupedListDataViewPort extends FeathersControl implements IViewPort
 	{
 		private static const INVALIDATION_FLAG_ITEM_RENDERER_FACTORY:String = "itemRendererFactory";
 
@@ -70,7 +70,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("minVisibleWidth cannot be NaN");
 			}
@@ -91,7 +91,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("maxVisibleWidth cannot be NaN");
 			}
@@ -110,7 +110,8 @@ package feathers.controls.supportClasses
 
 		public function set visibleWidth(value:Number):void
 		{
-			if(this.explicitVisibleWidth == value || (isNaN(value) && isNaN(this.explicitVisibleWidth)))
+			if(this.explicitVisibleWidth == value ||
+				(value !== value && this.explicitVisibleWidth !== this.explicitVisibleWidth)) //isNaN
 			{
 				return;
 			}
@@ -131,7 +132,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("minVisibleHeight cannot be NaN");
 			}
@@ -152,7 +153,7 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			if(isNaN(value))
+			if(value !== value) //isNaN
 			{
 				throw new ArgumentError("maxVisibleHeight cannot be NaN");
 			}
@@ -171,7 +172,8 @@ package feathers.controls.supportClasses
 
 		public function set visibleHeight(value:Number):void
 		{
-			if(this.explicitVisibleHeight == value || (isNaN(value) && isNaN(this.explicitVisibleHeight)))
+			if(this.explicitVisibleHeight == value ||
+				(value !== value && this.explicitVisibleHeight !== this.explicitVisibleHeight)) //isNaN
 			{
 				return;
 			}
@@ -315,6 +317,8 @@ package feathers.controls.supportClasses
 			}
 		}
 
+		private var _updateForDataReset:Boolean = false;
+
 		private var _dataProvider:HierarchicalCollection;
 
 		public function get dataProvider():HierarchicalCollection
@@ -351,6 +355,7 @@ package feathers.controls.supportClasses
 			{
 				IVariableVirtualLayout(this._layout).resetVariableVirtualCache();
 			}
+			this._updateForDataReset = true;
 			this.invalidate(INVALIDATION_FLAG_DATA);
 		}
 
@@ -425,20 +430,20 @@ package feathers.controls.supportClasses
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
-		private var _itemRendererName:String;
+		private var _customItemRendererStyleName:String;
 
-		public function get itemRendererName():String
+		public function get customItemRendererStyleName():String
 		{
-			return this._itemRendererName;
+			return this._customItemRendererStyleName;
 		}
 
-		public function set itemRendererName(value:String):void
+		public function set customItemRendererStyleName(value:String):void
 		{
-			if(this._itemRendererName == value)
+			if(this._customItemRendererStyleName == value)
 			{
 				return;
 			}
-			this._itemRendererName = value;
+			this._customItemRendererStyleName = value;
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
@@ -520,20 +525,20 @@ package feathers.controls.supportClasses
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
-		private var _firstItemRendererName:String;
+		private var _customFirstItemRendererStyleName:String;
 
-		public function get firstItemRendererName():String
+		public function get customFirstItemRendererStyleName():String
 		{
-			return this._firstItemRendererName;
+			return this._customFirstItemRendererStyleName;
 		}
 
-		public function set firstItemRendererName(value:String):void
+		public function set customFirstItemRendererStyleName(value:String):void
 		{
-			if(this._firstItemRendererName == value)
+			if(this._customFirstItemRendererStyleName == value)
 			{
 				return;
 			}
-			this._firstItemRendererName = value;
+			this._customFirstItemRendererStyleName = value;
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
@@ -573,20 +578,20 @@ package feathers.controls.supportClasses
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
-		private var _lastItemRendererName:String;
+		private var _customLastItemRendererStyleName:String;
 
-		public function get lastItemRendererName():String
+		public function get customLastItemRendererStyleName():String
 		{
-			return this._lastItemRendererName;
+			return this._customLastItemRendererStyleName;
 		}
 
-		public function set lastItemRendererName(value:String):void
+		public function set customLastItemRendererStyleName(value:String):void
 		{
-			if(this._lastItemRendererName == value)
+			if(this._customLastItemRendererStyleName == value)
 			{
 				return;
 			}
-			this._lastItemRendererName = value;
+			this._customLastItemRendererStyleName = value;
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
@@ -626,20 +631,20 @@ package feathers.controls.supportClasses
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
-		private var _singleItemRendererName:String;
+		private var _customSingleItemRendererStyleName:String;
 
-		public function get singleItemRendererName():String
+		public function get customSingleItemRendererStyleName():String
 		{
-			return this._singleItemRendererName;
+			return this._customSingleItemRendererStyleName;
 		}
 
-		public function set singleItemRendererName(value:String):void
+		public function set customSingleItemRendererStyleName(value:String):void
 		{
-			if(this._singleItemRendererName == value)
+			if(this._customSingleItemRendererStyleName == value)
 			{
 				return;
 			}
-			this._singleItemRendererName = value;
+			this._customSingleItemRendererStyleName = value;
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
@@ -679,20 +684,20 @@ package feathers.controls.supportClasses
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
-		private var _headerRendererName:String;
+		private var _customHeaderRendererStyleName:String;
 
-		public function get headerRendererName():String
+		public function get customHeaderRendererStyleName():String
 		{
-			return this._headerRendererName;
+			return this._customHeaderRendererStyleName;
 		}
 
-		public function set headerRendererName(value:String):void
+		public function set customHeaderRendererStyleName(value:String):void
 		{
-			if(this._headerRendererName == value)
+			if(this._customHeaderRendererStyleName == value)
 			{
 				return;
 			}
-			this._headerRendererName = value;
+			this._customHeaderRendererStyleName = value;
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
@@ -757,20 +762,20 @@ package feathers.controls.supportClasses
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
-		private var _footerRendererName:String;
+		private var _customFooterRendererStyleName:String;
 
-		public function get footerRendererName():String
+		public function get customFooterRendererStyleName():String
 		{
-			return this._footerRendererName;
+			return this._customFooterRendererStyleName;
 		}
 
-		public function set footerRendererName(value:String):void
+		public function set customFooterRendererStyleName(value:String):void
 		{
-			if(this._footerRendererName == value)
+			if(this._customFooterRendererStyleName == value)
 			{
 				return;
 			}
-			this._footerRendererName = value;
+			this._customFooterRendererStyleName = value;
 			this.invalidate(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
 		}
 
@@ -824,7 +829,7 @@ package feathers.controls.supportClasses
 			{
 				if(this._layout is IVariableVirtualLayout)
 				{
-					const variableVirtualLayout:IVariableVirtualLayout = IVariableVirtualLayout(this._layout)
+					var variableVirtualLayout:IVariableVirtualLayout = IVariableVirtualLayout(this._layout)
 					variableVirtualLayout.hasVariableItemDimensions = true;
 					variableVirtualLayout.resetVariableVirtualCache();
 				}
@@ -899,8 +904,21 @@ package feathers.controls.supportClasses
 				result = new Point();
 			}
 
-			const displayIndex:int = this.locationToDisplayIndex(groupIndex, itemIndex);
-			return this._layout.getScrollPositionForIndex(displayIndex, this._layoutItems, 0, 0, this.actualVisibleWidth, this.actualVisibleHeight, result);
+			var displayIndex:int = this.locationToDisplayIndex(groupIndex, itemIndex);
+			return this._layout.getScrollPositionForIndex(displayIndex, this._layoutItems,
+				0, 0, this.actualVisibleWidth, this.actualVisibleHeight, result);
+		}
+
+		public function getNearestScrollPositionForIndex(groupIndex:int, itemIndex:int, result:Point = null):Point
+		{
+			if(!result)
+			{
+				result = new Point();
+			}
+
+			var displayIndex:int = this.locationToDisplayIndex(groupIndex, itemIndex);
+			return this._layout.getNearestScrollPositionForIndex(displayIndex, this._horizontalScrollPosition,
+				this._verticalScrollPosition, this._layoutItems, 0, 0, this.actualVisibleWidth, this.actualVisibleHeight, result);
 		}
 
 		override public function dispose():void
@@ -913,56 +931,66 @@ package feathers.controls.supportClasses
 
 		override protected function draw():void
 		{
-			const dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
-			const scrollInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SCROLL);
-			const sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
-			const selectionInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SELECTED);
-			const itemRendererInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
-			const stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
-			const stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
-			const layoutInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_LAYOUT);
+			var dataInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_DATA);
+			var scrollInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SCROLL);
+			var sizeInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SIZE);
+			var selectionInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_SELECTED);
+			var itemRendererInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_ITEM_RENDERER_FACTORY);
+			var stylesInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STYLES);
+			var stateInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_STATE);
+			var layoutInvalid:Boolean = this.isInvalid(INVALIDATION_FLAG_LAYOUT);
+
+			//scrolling only affects the layout is requiresLayoutOnScroll is true
+			if(!layoutInvalid && scrollInvalid && this._layout && this._layout.requiresLayoutOnScroll)
+			{
+				layoutInvalid = true;
+			}
+
+			var basicsInvalid:Boolean = sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid;
 
 			var oldIgnoreRendererResizing:Boolean = this._ignoreRendererResizing;
 			this._ignoreRendererResizing = true;
 			var oldIgnoreLayoutChanges:Boolean = this._ignoreLayoutChanges;
 			this._ignoreLayoutChanges = true;
-			var oldIgnoreSelectionChanges:Boolean = this._ignoreSelectionChanges;
-			this._ignoreSelectionChanges = true;
 
 			if(scrollInvalid || sizeInvalid)
 			{
 				this.refreshViewPortBounds();
 			}
-			if(scrollInvalid || sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(basicsInvalid)
 			{
 				this.refreshInactiveRenderers(itemRendererInvalid);
 			}
-			if(stylesInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(dataInvalid || layoutInvalid || itemRendererInvalid)
 			{
 				this.refreshLayoutTypicalItem();
 			}
-			if(scrollInvalid || sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(basicsInvalid)
 			{
 				this.refreshRenderers();
 			}
-			if(scrollInvalid || stylesInvalid || sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(stylesInvalid || basicsInvalid)
 			{
 				this.refreshHeaderRendererStyles();
 				this.refreshFooterRendererStyles();
 				this.refreshItemRendererStyles();
 			}
-			if(scrollInvalid || selectionInvalid || sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(selectionInvalid || basicsInvalid)
 			{
+				//unlike resizing renderers and layout changes, we only want to
+				//stop listening for selection changes when we're forcibly
+				//updating selection. other property changes on item renderers
+				//can validly change selection, and we need to detect that.
+				var oldIgnoreSelectionChanges:Boolean = this._ignoreSelectionChanges;
+				this._ignoreSelectionChanges = true;
 				this.refreshSelection();
+				this._ignoreSelectionChanges = oldIgnoreSelectionChanges;
 			}
-
-			if(scrollInvalid || stateInvalid || sizeInvalid || dataInvalid || layoutInvalid || itemRendererInvalid)
+			if(stateInvalid || basicsInvalid)
 			{
 				this.refreshEnabled();
 			}
-
 			this._ignoreLayoutChanges = oldIgnoreLayoutChanges;
-			this._ignoreSelectionChanges = oldIgnoreSelectionChanges;
 
 			this._layout.layout(this._layoutItems, this._viewPortBounds, this._layoutResult);
 
@@ -1026,7 +1054,7 @@ package feathers.controls.supportClasses
 				var renderer:DisplayObject = DisplayObject(this._activeItemRenderers[i]);
 				if(renderer is IFeathersControl)
 				{
-					FeathersControl(renderer).isEnabled = this._isEnabled;
+					IFeathersControl(renderer).isEnabled = this._isEnabled;
 				}
 			}
 			if(this._activeFirstItemRenderers)
@@ -1037,7 +1065,7 @@ package feathers.controls.supportClasses
 					renderer = DisplayObject(this._activeFirstItemRenderers[i]);
 					if(renderer is IFeathersControl)
 					{
-						FeathersControl(renderer).isEnabled = this._isEnabled;
+						IFeathersControl(renderer).isEnabled = this._isEnabled;
 					}
 				}
 			}
@@ -1049,7 +1077,7 @@ package feathers.controls.supportClasses
 					renderer = DisplayObject(this._activeLastItemRenderers[i]);
 					if(renderer is IFeathersControl)
 					{
-						FeathersControl(renderer).isEnabled = this._isEnabled;
+						IFeathersControl(renderer).isEnabled = this._isEnabled;
 					}
 				}
 			}
@@ -1061,7 +1089,7 @@ package feathers.controls.supportClasses
 					renderer = DisplayObject(this._activeSingleItemRenderers[i]);
 					if(renderer is IFeathersControl)
 					{
-						FeathersControl(renderer).isEnabled = this._isEnabled;
+						IFeathersControl(renderer).isEnabled = this._isEnabled;
 					}
 				}
 			}
@@ -1071,7 +1099,7 @@ package feathers.controls.supportClasses
 				renderer = DisplayObject(this._activeHeaderRenderers[i]);
 				if(renderer is IFeathersControl)
 				{
-					FeathersControl(renderer).isEnabled = this._isEnabled;
+					IFeathersControl(renderer).isEnabled = this._isEnabled;
 				}
 			}
 			rendererCount = this._activeFooterRenderers.length;
@@ -1080,7 +1108,7 @@ package feathers.controls.supportClasses
 				renderer = DisplayObject(this._activeFooterRenderers[i]);
 				if(renderer is IFeathersControl)
 				{
-					FeathersControl(renderer).isEnabled = this._isEnabled;
+					IFeathersControl(renderer).isEnabled = this._isEnabled;
 				}
 			}
 		}
@@ -1104,13 +1132,13 @@ package feathers.controls.supportClasses
 				return;
 			}
 
-			const hasCustomFirstItemRenderer:Boolean = this._firstItemRendererType || this._firstItemRendererFactory != null || this._firstItemRendererName;
-			const hasCustomSingleItemRenderer:Boolean = this._singleItemRendererType || this._singleItemRendererFactory != null || this._singleItemRendererName;
+			var hasCustomFirstItemRenderer:Boolean = this._firstItemRendererType || this._firstItemRendererFactory != null || this._customFirstItemRendererStyleName;
+			var hasCustomSingleItemRenderer:Boolean = this._singleItemRendererType || this._singleItemRendererFactory != null || this._customSingleItemRendererStyleName;
 
 			var newTypicalItemIsInDataProvider:Boolean = false;
 			var typicalItem:Object = this._typicalItem;
 			var groupCount:int = 0;
-			var firstGroupLength:int = 0;
+			var typicalGroupLength:int = 0;
 			var typicalItemGroupIndex:int = 0;
 			var typicalItemItemIndex:int = 0;
 			if(this._dataProvider)
@@ -1120,11 +1148,15 @@ package feathers.controls.supportClasses
 					groupCount = this._dataProvider.getLength();
 					if(groupCount > 0)
 					{
-						firstGroupLength = this._dataProvider.getLength(0);
-						if(firstGroupLength > 0)
+						for(var i:int = 0; i < groupCount; i++)
 						{
-							newTypicalItemIsInDataProvider = true;
-							typicalItem = this._dataProvider.getItemAt(0, 0);
+							typicalGroupLength = this._dataProvider.getLength(i);
+							if(typicalGroupLength > 0)
+							{
+								newTypicalItemIsInDataProvider = true;
+								typicalItem = this._dataProvider.getItemAt(i, 0);
+								break;
+							}
 						}
 					}
 				}
@@ -1139,90 +1171,87 @@ package feathers.controls.supportClasses
 					}
 				}
 			}
-			if(!typicalItem)
-			{
-				virtualLayout.typicalItem = null;
-				return;
-			}
 
-			var isFirst:Boolean = false;
-			var isSingle:Boolean = false;
-			var typicalItemRenderer:IGroupedListItemRenderer;
-			if(hasCustomSingleItemRenderer && firstGroupLength == 1)
+			if(typicalItem)
 			{
-				if(this._singleItemRendererMap)
+				var isFirst:Boolean = false;
+				var isSingle:Boolean = false;
+				var typicalItemRenderer:IGroupedListItemRenderer;
+				if(hasCustomSingleItemRenderer && typicalGroupLength == 1)
 				{
-					typicalItemRenderer = this._singleItemRendererMap[typicalItem];
+					if(this._singleItemRendererMap)
+					{
+						typicalItemRenderer = IGroupedListItemRenderer(this._singleItemRendererMap[typicalItem]);
+					}
+					isSingle = true;
 				}
-				isSingle = true;
-			}
-			else if(hasCustomFirstItemRenderer && firstGroupLength > 1)
-			{
-				if(this._firstItemRendererMap)
+				else if(hasCustomFirstItemRenderer && typicalGroupLength > 1)
 				{
-					typicalItemRenderer = this._firstItemRendererMap[typicalItem];
-				}
-				isFirst = true;
-			}
-			else
-			{
-				typicalItemRenderer = this._itemRendererMap[typicalItem];
-			}
-			if(!typicalItemRenderer && !newTypicalItemIsInDataProvider && this._typicalItemRenderer)
-			{
-				//can use reuse the old item renderer instance
-				//since it is not in the data provider, we don't need to mess
-				//with the renderer map dictionary.
-				typicalItemRenderer = this._typicalItemRenderer;
-				typicalItemRenderer.data = typicalItem;
-				typicalItemRenderer.groupIndex = typicalItemGroupIndex;
-				typicalItemRenderer.itemIndex = typicalItemItemIndex;
-			}
-			if(!typicalItemRenderer)
-			{
-				if(isFirst)
-				{
-					var activeRenderers:Vector.<IGroupedListItemRenderer> = this._activeFirstItemRenderers;
-					var inactiveRenderers:Vector.<IGroupedListItemRenderer> = this._inactiveFirstItemRenderers;
-					var type:Class = this._firstItemRendererType ? this._firstItemRendererType : this._itemRendererType;
-					var factory:Function = this._firstItemRendererFactory != null ? this._firstItemRendererFactory : this._itemRendererFactory;
-					var name:String = this._firstItemRendererName ? this._firstItemRendererName : this._itemRendererName;
-					typicalItemRenderer = this.createItemRenderer(inactiveRenderers,
-						activeRenderers, this._firstItemRendererMap, type, factory,
-						name, typicalItem, 0, 0, 0, false, !newTypicalItemIsInDataProvider);
-				}
-				else if(isSingle)
-				{
-					activeRenderers = this._activeSingleItemRenderers;
-					inactiveRenderers = this._inactiveSingleItemRenderers;
-					type = this._singleItemRendererType ? this._singleItemRendererType : this._itemRendererType;
-					factory = this._singleItemRendererFactory != null ? this._singleItemRendererFactory : this._itemRendererFactory;
-					name = this._singleItemRendererName ? this._singleItemRendererName : this._itemRendererName;
-					typicalItemRenderer = this.createItemRenderer(inactiveRenderers,
-						activeRenderers, this._singleItemRendererMap, type, factory,
-						name, typicalItem, 0, 0, 0, false, !newTypicalItemIsInDataProvider);
+					if(this._firstItemRendererMap)
+					{
+						typicalItemRenderer = IGroupedListItemRenderer(this._firstItemRendererMap[typicalItem]);
+					}
+					isFirst = true;
 				}
 				else
 				{
-					activeRenderers = this._activeItemRenderers;
-					inactiveRenderers = this._inactiveItemRenderers;
-					typicalItemRenderer = this.createItemRenderer(inactiveRenderers,
-						activeRenderers, this._itemRendererMap, this._itemRendererType, this._itemRendererFactory,
-						this._itemRendererName, typicalItem, 0, 0, 0, false, !newTypicalItemIsInDataProvider);
+					typicalItemRenderer = IGroupedListItemRenderer(this._itemRendererMap[typicalItem]);
 				}
-				//can't be in a last item renderer
-
-				if(!this._typicalItemIsInDataProvider && this._typicalItemRenderer)
+				if(!typicalItemRenderer && !newTypicalItemIsInDataProvider && this._typicalItemRenderer)
 				{
-					//get rid of the old one if it isn't needed anymore
+					//can use reuse the old item renderer instance
 					//since it is not in the data provider, we don't need to mess
 					//with the renderer map dictionary.
-					this.destroyItemRenderer(this._typicalItemRenderer);
-					this._typicalItemRenderer = null;
+					typicalItemRenderer = this._typicalItemRenderer;
+					typicalItemRenderer.data = typicalItem;
+					typicalItemRenderer.groupIndex = typicalItemGroupIndex;
+					typicalItemRenderer.itemIndex = typicalItemItemIndex;
+				}
+				if(!typicalItemRenderer)
+				{
+					if(isFirst)
+					{
+						var activeRenderers:Vector.<IGroupedListItemRenderer> = this._activeFirstItemRenderers;
+						var inactiveRenderers:Vector.<IGroupedListItemRenderer> = this._inactiveFirstItemRenderers;
+						var type:Class = this._firstItemRendererType ? this._firstItemRendererType : this._itemRendererType;
+						var factory:Function = this._firstItemRendererFactory != null ? this._firstItemRendererFactory : this._itemRendererFactory;
+						var name:String = this._customFirstItemRendererStyleName ? this._customFirstItemRendererStyleName : this._customItemRendererStyleName;
+						typicalItemRenderer = this.createItemRenderer(inactiveRenderers,
+							activeRenderers, this._firstItemRendererMap, type, factory,
+							name, typicalItem, 0, 0, 0, false, !newTypicalItemIsInDataProvider);
+					}
+					else if(isSingle)
+					{
+						activeRenderers = this._activeSingleItemRenderers;
+						inactiveRenderers = this._inactiveSingleItemRenderers;
+						type = this._singleItemRendererType ? this._singleItemRendererType : this._itemRendererType;
+						factory = this._singleItemRendererFactory != null ? this._singleItemRendererFactory : this._itemRendererFactory;
+						name = this._customSingleItemRendererStyleName ? this._customSingleItemRendererStyleName : this._customItemRendererStyleName;
+						typicalItemRenderer = this.createItemRenderer(inactiveRenderers,
+							activeRenderers, this._singleItemRendererMap, type, factory,
+							name, typicalItem, 0, 0, 0, false, !newTypicalItemIsInDataProvider);
+					}
+					else
+					{
+						activeRenderers = this._activeItemRenderers;
+						inactiveRenderers = this._inactiveItemRenderers;
+						typicalItemRenderer = this.createItemRenderer(inactiveRenderers,
+							activeRenderers, this._itemRendererMap, this._itemRendererType, this._itemRendererFactory,
+							this._customItemRendererStyleName, typicalItem, 0, 0, 0, false, !newTypicalItemIsInDataProvider);
+					}
+					//can't be in a last item renderer
+
+					if(!this._typicalItemIsInDataProvider && this._typicalItemRenderer)
+					{
+						//get rid of the old one if it isn't needed anymore
+						//since it is not in the data provider, we don't need to mess
+						//with the renderer map dictionary.
+						this.destroyItemRenderer(this._typicalItemRenderer);
+						this._typicalItemRenderer = null;
+					}
 				}
 			}
 
-			this.refreshOneItemRendererStyles(typicalItemRenderer);
 			virtualLayout.typicalItem = DisplayObject(typicalItemRenderer);
 			this._typicalItemRenderer = typicalItemRenderer;
 			this._typicalItemIsInDataProvider = newTypicalItemIsInDataProvider;
@@ -1266,40 +1295,31 @@ package feathers.controls.supportClasses
 
 		private function refreshOneItemRendererStyles(renderer:IGroupedListItemRenderer):void
 		{
-			const displayRenderer:DisplayObject = DisplayObject(renderer);
+			var displayRenderer:DisplayObject = DisplayObject(renderer);
 			for(var propertyName:String in this._itemRendererProperties)
 			{
-				if(displayRenderer.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._itemRendererProperties[propertyName];
-					displayRenderer[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._itemRendererProperties[propertyName];
+				displayRenderer[propertyName] = propertyValue;
 			}
 		}
 
 		private function refreshOneHeaderRendererStyles(renderer:IGroupedListHeaderOrFooterRenderer):void
 		{
-			const displayRenderer:DisplayObject = DisplayObject(renderer);
+			var displayRenderer:DisplayObject = DisplayObject(renderer);
 			for(var propertyName:String in this._headerRendererProperties)
 			{
-				if(displayRenderer.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._headerRendererProperties[propertyName];
-					displayRenderer[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._headerRendererProperties[propertyName];
+				displayRenderer[propertyName] = propertyValue;
 			}
 		}
 
 		private function refreshOneFooterRendererStyles(renderer:IGroupedListHeaderOrFooterRenderer):void
 		{
-			const displayRenderer:DisplayObject = DisplayObject(renderer);
+			var displayRenderer:DisplayObject = DisplayObject(renderer);
 			for(var propertyName:String in this._footerRendererProperties)
 			{
-				if(displayRenderer.hasOwnProperty(propertyName))
-				{
-					var propertyValue:Object = this._footerRendererProperties[propertyName];
-					displayRenderer[propertyName] = propertyValue;
-				}
+				var propertyValue:Object = this._footerRendererProperties[propertyName];
+				displayRenderer[propertyName] = propertyValue;
 			}
 		}
 
@@ -1438,7 +1458,7 @@ package feathers.controls.supportClasses
 			this._headerIndices.length = 0;
 			this._footerIndices.length = 0;
 
-			const hasCustomFirstItemRenderer:Boolean = this._firstItemRendererType || this._firstItemRendererFactory != null || this._firstItemRendererName;
+			var hasCustomFirstItemRenderer:Boolean = this._firstItemRendererType || this._firstItemRendererFactory != null || this._customFirstItemRendererStyleName;
 			if(hasCustomFirstItemRenderer)
 			{
 				if(!this._firstItemRendererMap)
@@ -1465,7 +1485,7 @@ package feathers.controls.supportClasses
 				this._activeFirstItemRenderers = null;
 				this._unrenderedFirstItems = null;
 			}
-			const hasCustomLastItemRenderer:Boolean = this._lastItemRendererType || this._lastItemRendererFactory != null || this._lastItemRendererName;
+			var hasCustomLastItemRenderer:Boolean = this._lastItemRendererType || this._lastItemRendererFactory != null || this._customLastItemRendererStyleName;
 			if(hasCustomLastItemRenderer)
 			{
 				if(!this._lastItemRendererMap)
@@ -1492,7 +1512,7 @@ package feathers.controls.supportClasses
 				this._activeLastItemRenderers = null;
 				this._unrenderedLastItems = null;
 			}
-			const hasCustomSingleItemRenderer:Boolean = this._singleItemRendererType || this._singleItemRendererFactory != null || this._singleItemRendererName;
+			var hasCustomSingleItemRenderer:Boolean = this._singleItemRendererType || this._singleItemRendererFactory != null || this._customSingleItemRendererStyleName;
 			if(hasCustomSingleItemRenderer)
 			{
 				if(!this._singleItemRendererMap)
@@ -1523,65 +1543,73 @@ package feathers.controls.supportClasses
 
 		private function refreshRenderers():void
 		{
-			if(this._typicalItemRenderer && this._typicalItemIsInDataProvider)
+			if(this._typicalItemRenderer)
 			{
-				var typicalItem:Object = this._typicalItemRenderer.data;
-				if(this._itemRendererMap[typicalItem] == this._typicalItemRenderer)
+				if(this._typicalItemIsInDataProvider)
 				{
-					//this renderer is already is use by the typical item, so we
-					//don't want to allow it to be used by other items.
-					var inactiveIndex:int = this._inactiveItemRenderers.indexOf(this._typicalItemRenderer);
-					if(inactiveIndex >= 0)
+					var typicalItem:Object = this._typicalItemRenderer.data;
+					if(IGroupedListItemRenderer(this._itemRendererMap[typicalItem]) == this._typicalItemRenderer)
 					{
-						this._inactiveItemRenderers.splice(inactiveIndex, 1);
+						//this renderer is already is use by the typical item, so we
+						//don't want to allow it to be used by other items.
+						var inactiveIndex:int = this._inactiveItemRenderers.indexOf(this._typicalItemRenderer);
+						if(inactiveIndex >= 0)
+						{
+							this._inactiveItemRenderers.splice(inactiveIndex, 1);
+						}
+						//if refreshLayoutTypicalItem() was called, it will have already
+						//added the typical item renderer to the active renderers. if
+						//not, we need to do it here.
+						var activeRenderersCount:int = this._activeItemRenderers.length;
+						if(activeRenderersCount == 0)
+						{
+							this._activeItemRenderers[activeRenderersCount] = this._typicalItemRenderer;
+						}
 					}
-					//if refreshLayoutTypicalItem() was called, it will have already
-					//added the typical item renderer to the active renderers. if
-					//not, we need to do it here.
-					var activeRenderersCount:int = this._activeItemRenderers.length;
-					if(activeRenderersCount == 0)
+					else if(this._firstItemRendererMap && IGroupedListItemRenderer(this._firstItemRendererMap[typicalItem]) == this._typicalItemRenderer)
 					{
-						this._activeItemRenderers[activeRenderersCount] = this._typicalItemRenderer;
+						inactiveIndex = this._inactiveFirstItemRenderers.indexOf(this._typicalItemRenderer);
+						if(inactiveIndex >= 0)
+						{
+							this._inactiveFirstItemRenderers.splice(inactiveIndex, 1);
+						}
+						activeRenderersCount = this._activeFirstItemRenderers.length;
+						if(activeRenderersCount == 0)
+						{
+							this._activeFirstItemRenderers[activeRenderersCount] = this._typicalItemRenderer;
+						}
 					}
+					else if(this._singleItemRendererMap && IGroupedListItemRenderer(this._singleItemRendererMap[typicalItem]) == this._typicalItemRenderer)
+					{
+						inactiveIndex = this._inactiveSingleItemRenderers.indexOf(this._typicalItemRenderer);
+						if(inactiveIndex >= 0)
+						{
+							this._inactiveSingleItemRenderers.splice(inactiveIndex, 1);
+						}
+						activeRenderersCount = this._activeSingleItemRenderers.length;
+						if(activeRenderersCount == 0)
+						{
+							this._activeSingleItemRenderers[activeRenderersCount] = this._typicalItemRenderer;
+						}
+					}
+					//no else... can't be in last item renderers
 				}
-				else if(this._firstItemRendererMap && this._firstItemRendererMap[typicalItem] == this._typicalItemRenderer)
-				{
-					inactiveIndex = this._inactiveFirstItemRenderers.indexOf(this._typicalItemRenderer);
-					if(inactiveIndex >= 0)
-					{
-						this._inactiveFirstItemRenderers.splice(inactiveIndex, 1);
-					}
-					activeRenderersCount = this._activeFirstItemRenderers.length;
-					if(activeRenderersCount == 0)
-					{
-						this._activeFirstItemRenderers[activeRenderersCount] = this._typicalItemRenderer;
-					}
-				}
-				else if(this._singleItemRendererMap && this._singleItemRendererMap[typicalItem] == this._typicalItemRenderer)
-				{
-					inactiveIndex = this._inactiveSingleItemRenderers.indexOf(this._typicalItemRenderer);
-					if(inactiveIndex >= 0)
-					{
-						this._inactiveSingleItemRenderers.splice(inactiveIndex, 1);
-					}
-					activeRenderersCount = this._activeSingleItemRenderers.length;
-					if(activeRenderersCount == 0)
-					{
-						this._activeSingleItemRenderers[activeRenderersCount] = this._typicalItemRenderer;
-					}
-				}
-				//no else... can't be in last item renderers
+				//we need to set the typical item renderer's properties here
+				//because they may be needed for proper measurement in a virtual
+				//layout.
+				this.refreshOneItemRendererStyles(this._typicalItemRenderer);
 			}
 
 			this.findUnrenderedData();
 			this.recoverInactiveRenderers();
 			this.renderUnrenderedData();
 			this.freeInactiveRenderers();
+			this._updateForDataReset = false;
 		}
 
 		private function findUnrenderedData():void
 		{
-			const groupCount:int = this._dataProvider ? this._dataProvider.getLength() : 0;
+			var groupCount:int = this._dataProvider ? this._dataProvider.getLength() : 0;
 			var totalLayoutCount:int = 0;
 			var totalHeaderCount:int = 0;
 			var totalFooterCount:int = 0;
@@ -1611,8 +1639,8 @@ package feathers.controls.supportClasses
 				}
 			}
 			this._layoutItems.length = totalLayoutCount;
-			const virtualLayout:IVirtualLayout = this._layout as IVirtualLayout;
-			const useVirtualLayout:Boolean = virtualLayout && virtualLayout.useVirtualLayout;
+			var virtualLayout:IVirtualLayout = this._layout as IVirtualLayout;
+			var useVirtualLayout:Boolean = virtualLayout && virtualLayout.useVirtualLayout;
 			if(useVirtualLayout)
 			{
 				virtualLayout.measureViewPort(totalLayoutCount, this._viewPortBounds, HELPER_POINT);
@@ -1652,9 +1680,9 @@ package feathers.controls.supportClasses
 					this._minimumItemCount = 1;
 				}
 			}
-			const hasCustomFirstItemRenderer:Boolean = this._firstItemRendererType || this._firstItemRendererFactory != null || this._firstItemRendererName;
-			const hasCustomLastItemRenderer:Boolean = this._lastItemRendererType || this._lastItemRendererFactory != null || this._lastItemRendererName;
-			const hasCustomSingleItemRenderer:Boolean = this._singleItemRendererType || this._singleItemRendererFactory != null || this._singleItemRendererName;
+			var hasCustomFirstItemRenderer:Boolean = this._firstItemRendererType || this._firstItemRendererFactory != null || this._customFirstItemRendererStyleName;
+			var hasCustomLastItemRenderer:Boolean = this._lastItemRendererType || this._lastItemRendererFactory != null || this._customLastItemRendererStyleName;
+			var hasCustomSingleItemRenderer:Boolean = this._singleItemRendererType || this._singleItemRendererFactory != null || this._customSingleItemRendererStyleName;
 			var currentIndex:int = 0;
 			var unrenderedHeadersLastIndex:int = this._unrenderedHeaders.length;
 			var unrenderedFootersLastIndex:int = this._unrenderedFooters.length;
@@ -1676,6 +1704,12 @@ package feathers.controls.supportClasses
 						{
 							headerOrFooterRenderer.layoutIndex = currentIndex;
 							headerOrFooterRenderer.groupIndex = i;
+							if(this._updateForDataReset)
+							{
+								//see comments in findRendererForItem()
+								headerOrFooterRenderer.data = null;
+								headerOrFooterRenderer.data = header;
+							}
 							this._activeHeaderRenderers.push(headerOrFooterRenderer);
 							this._inactiveHeaderRenderers.splice(this._inactiveHeaderRenderers.indexOf(headerOrFooterRenderer), 1);
 							headerOrFooterRenderer.visible = true;
@@ -1739,6 +1773,12 @@ package feathers.controls.supportClasses
 						{
 							headerOrFooterRenderer.groupIndex = i;
 							headerOrFooterRenderer.layoutIndex = currentIndex;
+							if(this._updateForDataReset)
+							{
+								//see comments in findRendererForItem()
+								headerOrFooterRenderer.data = null;
+								headerOrFooterRenderer.data = footer;
+							}
 							this._activeFooterRenderers.push(headerOrFooterRenderer);
 							this._inactiveFooterRenderers.splice(this._inactiveFooterRenderers.indexOf(headerOrFooterRenderer), 1);
 							headerOrFooterRenderer.visible = true;
@@ -1795,6 +1835,20 @@ package feathers.controls.supportClasses
 				itemRenderer.groupIndex = groupIndex;
 				itemRenderer.itemIndex = itemIndex;
 				itemRenderer.layoutIndex = layoutIndex;
+				if(this._updateForDataReset)
+				{
+					//similar to calling updateItemAt(), replacing the data
+					//provider or resetting its source means that we should
+					//trick the item renderer into thinking it has new data.
+					//many developers seem to expect this behavior, so while
+					//it's not the most optimal for performance, it saves on
+					//support time in the forums. thankfully, it's still
+					//somewhat optimized since the same item renderer will
+					//receive the same data, and the children generally
+					//won't have changed much, if at all.
+					itemRenderer.data = null;
+					itemRenderer.data = item;
+				}
 
 				//the typical item renderer is a special case, and we will
 				//have already put it into the active renderers, so we don't
@@ -1834,7 +1888,7 @@ package feathers.controls.supportClasses
 				var item:Object = this._dataProvider.getItemAt(groupIndex, itemIndex);
 				var itemRenderer:IGroupedListItemRenderer = this.createItemRenderer(this._inactiveItemRenderers,
 					this._activeItemRenderers, this._itemRendererMap, this._itemRendererType, this._itemRendererFactory,
-					this._itemRendererName, item, groupIndex, itemIndex, layoutIndex, true, false);
+					this._customItemRendererStyleName, item, groupIndex, itemIndex, layoutIndex, true, false);
 				this._layoutItems[layoutIndex] = DisplayObject(itemRenderer);
 			}
 
@@ -1849,7 +1903,7 @@ package feathers.controls.supportClasses
 					item = this._dataProvider.getItemAt(groupIndex, itemIndex);
 					var type:Class = this._firstItemRendererType ? this._firstItemRendererType : this._itemRendererType;
 					var factory:Function = this._firstItemRendererFactory != null ? this._firstItemRendererFactory : this._itemRendererFactory;
-					var name:String = this._firstItemRendererName ? this._firstItemRendererName : this._itemRendererName;
+					var name:String = this._customFirstItemRendererStyleName ? this._customFirstItemRendererStyleName : this._customItemRendererStyleName;
 					itemRenderer = this.createItemRenderer(this._inactiveFirstItemRenderers, this._activeFirstItemRenderers,
 						this._firstItemRendererMap, type, factory, name, item, groupIndex, itemIndex, layoutIndex, true, false);
 					this._layoutItems[layoutIndex] = DisplayObject(itemRenderer);
@@ -1867,7 +1921,7 @@ package feathers.controls.supportClasses
 					item = this._dataProvider.getItemAt(groupIndex, itemIndex);
 					type = this._lastItemRendererType ? this._lastItemRendererType : this._itemRendererType;
 					factory = this._lastItemRendererFactory != null ? this._lastItemRendererFactory : this._itemRendererFactory;
-					name = this._lastItemRendererName ? this._lastItemRendererName : this._itemRendererName;
+					name = this._customLastItemRendererStyleName ? this._customLastItemRendererStyleName : this._customItemRendererStyleName;
 					itemRenderer = this.createItemRenderer(this._inactiveLastItemRenderers, this._activeLastItemRenderers,
 						this._lastItemRendererMap, type,  factory,  name, item, groupIndex, itemIndex, layoutIndex, true, false);
 					this._layoutItems[layoutIndex] = DisplayObject(itemRenderer);
@@ -1885,7 +1939,7 @@ package feathers.controls.supportClasses
 					item = this._dataProvider.getItemAt(groupIndex, itemIndex);
 					type = this._singleItemRendererType ? this._singleItemRendererType : this._itemRendererType;
 					factory = this._singleItemRendererFactory != null ? this._singleItemRendererFactory : this._itemRendererFactory;
-					name = this._singleItemRendererName ? this._singleItemRendererName : this._itemRendererName;
+					name = this._customSingleItemRendererStyleName ? this._customSingleItemRendererStyleName : this._customItemRendererStyleName;
 					itemRenderer = this.createItemRenderer(this._inactiveSingleItemRenderers, this._activeSingleItemRenderers,
 						this._singleItemRendererMap, type,  factory,  name, item, groupIndex, itemIndex, layoutIndex, true, false);
 					this._layoutItems[layoutIndex] = DisplayObject(itemRenderer);
@@ -1921,7 +1975,7 @@ package feathers.controls.supportClasses
 			for(var i:int = 0; i < rendererCount; i++)
 			{
 				var itemRenderer:IGroupedListItemRenderer = this._inactiveItemRenderers[i];
-				if(!itemRenderer)
+				if(!itemRenderer || itemRenderer.groupIndex < 0)
 				{
 					continue;
 				}
@@ -2158,7 +2212,7 @@ package feathers.controls.supportClasses
 				var uiRenderer:IFeathersControl = IFeathersControl(renderer);
 				if(name && name.length > 0)
 				{
-					uiRenderer.nameList.add(name);
+					uiRenderer.styleNameList.add(name);
 				}
 				this.addChild(DisplayObject(renderer));
 			}
@@ -2177,6 +2231,7 @@ package feathers.controls.supportClasses
 			{
 				rendererMap[item] = renderer;
 				activeRenderers.push(renderer);
+				renderer.addEventListener(Event.TRIGGERED, renderer_triggeredHandler);
 				renderer.addEventListener(Event.CHANGE, renderer_changeHandler);
 				renderer.addEventListener(FeathersEventType.RESIZE, itemRenderer_resizeHandler);
 				this._owner.dispatchEventWith(FeathersEventType.RENDERER_ADD, false, renderer);
@@ -2199,9 +2254,9 @@ package feathers.controls.supportClasses
 					renderer = new this._headerRendererType();
 				}
 				var uiRenderer:IFeathersControl = IFeathersControl(renderer);
-				if(this._headerRendererName && this._headerRendererName.length > 0)
+				if(this._customHeaderRendererStyleName && this._customHeaderRendererStyleName.length > 0)
 				{
-					uiRenderer.nameList.add(this._headerRendererName);
+					uiRenderer.styleNameList.add(this._customHeaderRendererStyleName);
 				}
 				this.addChild(DisplayObject(renderer));
 			}
@@ -2240,9 +2295,9 @@ package feathers.controls.supportClasses
 					renderer = new this._footerRendererType();
 				}
 				var uiRenderer:IFeathersControl = IFeathersControl(renderer);
-				if(this._footerRendererName && this._footerRendererName.length > 0)
+				if(this._customFooterRendererStyleName && this._customFooterRendererStyleName.length > 0)
 				{
-					uiRenderer.nameList.add(this._footerRendererName);
+					uiRenderer.styleNameList.add(this._customFooterRendererStyleName);
 				}
 				this.addChild(DisplayObject(renderer));
 			}
@@ -2269,6 +2324,7 @@ package feathers.controls.supportClasses
 
 		private function destroyItemRenderer(renderer:IGroupedListItemRenderer):void
 		{
+			renderer.removeEventListener(Event.TRIGGERED, renderer_triggeredHandler);
 			renderer.removeEventListener(Event.CHANGE, renderer_changeHandler);
 			renderer.removeEventListener(FeathersEventType.RESIZE, itemRenderer_resizeHandler);
 			renderer.owner = null;
@@ -2301,7 +2357,7 @@ package feathers.controls.supportClasses
 				return -1;
 			}
 			var displayIndex:int = 0;
-			const groupCount:int = this._dataProvider.getLength();
+			var groupCount:int = this._dataProvider.getLength();
 			for(var i:int = 0; i < groupCount; i++)
 			{
 				group = this._dataProvider.getItemAt(i);
@@ -2337,7 +2393,7 @@ package feathers.controls.supportClasses
 				return -1;
 			}
 			var displayIndex:int = 0;
-			const groupCount:int = this._dataProvider.getLength();
+			var groupCount:int = this._dataProvider.getLength();
 			for(var i:int = 0; i < groupCount; i++)
 			{
 				group = this._dataProvider.getItemAt(i);
@@ -2367,7 +2423,7 @@ package feathers.controls.supportClasses
 		private function locationToDisplayIndex(groupIndex:int, itemIndex:int):int
 		{
 			var displayIndex:int = 0;
-			const groupCount:int = this._dataProvider.getLength();
+			var groupCount:int = this._dataProvider.getLength();
 			for(var i:int = 0; i < groupCount; i++)
 			{
 				var group:Object = this._dataProvider.getItemAt(i);
@@ -2445,21 +2501,21 @@ package feathers.controls.supportClasses
 
 		private function dataProvider_addItemHandler(event:Event, indices:Array):void
 		{
-			const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+			var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 			if(!layout || !layout.hasVariableItemDimensions)
 			{
 				return;
 			}
-			const groupIndex:int = indices[0] as int;
+			var groupIndex:int = indices[0] as int;
 			if(indices.length > 1) //adding an item
 			{
-				const itemIndex:int = indices[1] as int;
-				const itemDisplayIndex:int = this.locationToDisplayIndex(groupIndex, itemIndex);
+				var itemIndex:int = indices[1] as int;
+				var itemDisplayIndex:int = this.locationToDisplayIndex(groupIndex, itemIndex);
 				layout.addToVariableVirtualCacheAtIndex(itemDisplayIndex);
 			}
 			else //adding a whole group
 			{
-				const headerDisplayIndex:int = this.groupToHeaderDisplayIndex(groupIndex);
+				var headerDisplayIndex:int = this.groupToHeaderDisplayIndex(groupIndex);
 				if(headerDisplayIndex >= 0)
 				{
 					layout.addToVariableVirtualCacheAtIndex(headerDisplayIndex);
@@ -2478,7 +2534,7 @@ package feathers.controls.supportClasses
 						layout.addToVariableVirtualCacheAtIndex(displayIndex);
 					}
 				}
-				const footerDisplayIndex:int = this.groupToFooterDisplayIndex(groupIndex);
+				var footerDisplayIndex:int = this.groupToFooterDisplayIndex(groupIndex);
 				if(footerDisplayIndex >= 0)
 				{
 					layout.addToVariableVirtualCacheAtIndex(footerDisplayIndex);
@@ -2488,16 +2544,16 @@ package feathers.controls.supportClasses
 
 		private function dataProvider_removeItemHandler(event:Event, indices:Array):void
 		{
-			const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+			var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 			if(!layout || !layout.hasVariableItemDimensions)
 			{
 				return;
 			}
-			const groupIndex:int = indices[0] as int;
+			var groupIndex:int = indices[0] as int;
 			if(indices.length > 1) //removing an item
 			{
-				const itemIndex:int = indices[1] as int;
-				const displayIndex:int = this.locationToDisplayIndex(groupIndex, itemIndex);
+				var itemIndex:int = indices[1] as int;
+				var displayIndex:int = this.locationToDisplayIndex(groupIndex, itemIndex);
 				layout.removeFromVariableVirtualCacheAtIndex(displayIndex);
 			}
 			else //removing a whole group
@@ -2510,16 +2566,16 @@ package feathers.controls.supportClasses
 
 		private function dataProvider_replaceItemHandler(event:Event, indices:Array):void
 		{
-			const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+			var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 			if(!layout || !layout.hasVariableItemDimensions)
 			{
 				return;
 			}
-			const groupIndex:int = indices[0] as int;
+			var groupIndex:int = indices[0] as int;
 			if(indices.length > 1) //replacing an item
 			{
-				const itemIndex:int = indices[1] as int;
-				const displayIndex:int = this.locationToDisplayIndex(groupIndex, itemIndex);
+				var itemIndex:int = indices[1] as int;
+				var displayIndex:int = this.locationToDisplayIndex(groupIndex, itemIndex);
 				layout.resetVariableVirtualCacheAtIndex(displayIndex);
 			}
 			else //replacing a whole group
@@ -2532,7 +2588,9 @@ package feathers.controls.supportClasses
 
 		private function dataProvider_resetHandler(event:Event):void
 		{
-			const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+			this._updateForDataReset = true;
+
+			var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 			if(!layout || !layout.hasVariableItemDimensions)
 			{
 				return;
@@ -2574,7 +2632,7 @@ package feathers.controls.supportClasses
 				item = this._owner.groupToHeaderData(group);
 				if(item)
 				{
-					var headerOrFooterRenderer:IGroupedListHeaderOrFooterRenderer = this._headerRendererMap[item];
+					var headerOrFooterRenderer:IGroupedListHeaderOrFooterRenderer = IGroupedListHeaderOrFooterRenderer(this._headerRendererMap[item]);
 					if(headerOrFooterRenderer)
 					{
 						headerOrFooterRenderer.data = null;
@@ -2584,7 +2642,7 @@ package feathers.controls.supportClasses
 				item = this._owner.groupToFooterData(group);
 				if(item)
 				{
-					headerOrFooterRenderer = this._footerRendererMap[item];
+					headerOrFooterRenderer = IGroupedListHeaderOrFooterRenderer(this._footerRendererMap[item]);
 					if(headerOrFooterRenderer)
 					{
 						headerOrFooterRenderer.data = null;
@@ -2595,7 +2653,7 @@ package feathers.controls.supportClasses
 				//we need to invalidate because the group may have more or fewer items
 				this.invalidate(INVALIDATION_FLAG_DATA);
 
-				const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+				var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 				if(!layout || !layout.hasVariableItemDimensions)
 				{
 					return;
@@ -2622,12 +2680,12 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+			var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 			if(!layout || !layout.hasVariableItemDimensions)
 			{
 				return;
 			}
-			const renderer:IGroupedListItemRenderer = IGroupedListItemRenderer(event.currentTarget);
+			var renderer:IGroupedListItemRenderer = IGroupedListItemRenderer(event.currentTarget);
 			if(renderer.layoutIndex < 0)
 			{
 				return;
@@ -2643,12 +2701,12 @@ package feathers.controls.supportClasses
 			{
 				return;
 			}
-			const layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
+			var layout:IVariableVirtualLayout = this._layout as IVariableVirtualLayout;
 			if(!layout || !layout.hasVariableItemDimensions)
 			{
 				return;
 			}
-			const renderer:IGroupedListHeaderOrFooterRenderer = IGroupedListHeaderOrFooterRenderer(event.currentTarget);
+			var renderer:IGroupedListHeaderOrFooterRenderer = IGroupedListHeaderOrFooterRenderer(event.currentTarget);
 			if(renderer.layoutIndex < 0)
 			{
 				return;
@@ -2656,6 +2714,12 @@ package feathers.controls.supportClasses
 			layout.resetVariableVirtualCacheAtIndex(renderer.layoutIndex, DisplayObject(renderer));
 			this.invalidate(INVALIDATION_FLAG_LAYOUT);
 			this.invalidateParent(INVALIDATION_FLAG_LAYOUT);
+		}
+
+		private function renderer_triggeredHandler(event:Event):void
+		{
+			var renderer:IGroupedListItemRenderer = IGroupedListItemRenderer(event.currentTarget);
+			this.parent.dispatchEventWith(Event.TRIGGERED, false, renderer.data);
 		}
 
 		private function renderer_changeHandler(event:Event):void

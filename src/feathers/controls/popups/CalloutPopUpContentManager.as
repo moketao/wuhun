@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -14,6 +14,11 @@ package feathers.controls.popups
 	import starling.display.DisplayObject;
 	import starling.events.Event;
 	import starling.events.EventDispatcher;
+
+	/**
+	 * @inheritDoc
+	 */
+	[Event(name="open",type="starling.events.Event")]
 
 	/**
 	 * @inheritDoc
@@ -100,16 +105,25 @@ package feathers.controls.popups
 		/**
 		 * @inheritDoc
 		 */
+		public function get isOpen():Boolean
+		{
+			return this.content !== null;
+		}
+
+		/**
+		 * @inheritDoc
+		 */
 		public function open(content:DisplayObject, source:DisplayObject):void
 		{
-			if(this.content)
+			if(this.isOpen)
 			{
-				throw new IllegalOperationError("Pop-up content is already defined.");
+				throw new IllegalOperationError("Pop-up content is already open. Close the previous content before opening new content.");
 			}
 
 			this.content = content;
 			this.callout = Callout.show(content, source, this.direction, this.isModal, this.calloutFactory);
-			this.callout.addEventListener(Event.CLOSE, callout_closeHandler);
+			this.callout.addEventListener(Event.REMOVED_FROM_STAGE, callout_removedFromStageHandler);
+			this.dispatchEventWith(Event.OPEN);
 		}
 
 		/**
@@ -117,7 +131,7 @@ package feathers.controls.popups
 		 */
 		public function close():void
 		{
-			if(!this.callout)
+			if(!this.isOpen)
 			{
 				return;
 			}
@@ -139,14 +153,14 @@ package feathers.controls.popups
 		{
 			this.content = null;
 			this.callout.content = null;
-			this.callout.removeEventListener(Event.CLOSE, callout_closeHandler);
+			this.callout.removeEventListener(Event.REMOVED_FROM_STAGE, callout_removedFromStageHandler);
 			this.callout = null;
 		}
 
 		/**
 		 * @private
 		 */
-		protected function callout_closeHandler(event:Event):void
+		protected function callout_removedFromStageHandler(event:Event):void
 		{
 			this.cleanup();
 			this.dispatchEventWith(Event.CLOSE);

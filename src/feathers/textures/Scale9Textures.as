@@ -1,6 +1,6 @@
 /*
 Feathers
-Copyright 2012-2013 Joshua Tynjala. All Rights Reserved.
+Copyright 2012-2014 Joshua Tynjala. All Rights Reserved.
 
 This program is free software. You can redistribute and/or modify it in
 accordance with the terms of the accompanying license agreement.
@@ -12,17 +12,75 @@ package feathers.textures
 	import starling.textures.Texture;
 
 	/**
-	 * A set of nine textures used by <code>Scale9Image</code>.
+	 * Slices a Starling Texture into nine regions to be used by <code>Scale9Image</code>.
 	 *
-	 * @see org.josht.starling.display.Scale9Image
+	 * @see feathers.display.Scale9Image
 	 */
 	public final class Scale9Textures
 	{
 		/**
+		 * @private
+		 */
+		private static const ZERO_WIDTH_ERROR:String = "The width of the scale9Grid must be greater than zero.";
+
+		/**
+		 * @private
+		 */
+		private static const ZERO_HEIGHT_ERROR:String = "The height of the scale9Grid must be greater than zero.";
+
+		/**
+		 * @private
+		 */
+		private static const SUM_X_REGIONS_ERROR:String = "The sum of the x and width properties of the scale9Grid must be less than or equal to the width of the texture.";
+
+		/**
+		 * @private
+		 */
+		private static const SUM_Y_REGIONS_ERROR:String = "The sum of the y and height properties of the scale9Grid must be less than or equal to the height of the texture.";
+
+		/**
+		 * @private
+		 */
+		private static const HELPER_RECTANGLE:Rectangle = new Rectangle();
+
+		/**
 		 * Constructor.
+		 *
+		 * @param texture		A Starling Texture to slice up into nine regions. It is recommended to turn of mip-maps for best rendering results.
+		 * @param scale9Grid	The rectangle defining the region in the horizontal center and vertical middle, with other regions being calculated automatically. This value should be based on the original texture dimensions, with no adjustments for scale factor.
 		 */
 		public function Scale9Textures(texture:Texture, scale9Grid:Rectangle)
 		{
+			if(scale9Grid.width <= 0)
+			{
+				throw new ArgumentError(ZERO_WIDTH_ERROR);
+			}
+			if(scale9Grid.height <= 0)
+			{
+				throw new ArgumentError(ZERO_HEIGHT_ERROR);
+			}
+			var textureScale:Number = texture.scale;
+			//the scale9Grid does not account for the texture's scale factor,
+			//so we need to scale the grid to match.
+			if(textureScale != 1)
+			{
+				scale9Grid = scale9Grid.clone();
+				scale9Grid.setTo(scale9Grid.x / textureScale, scale9Grid.y / textureScale, scale9Grid.width / textureScale, scale9Grid.height / textureScale);
+			}
+			var textureFrame:Rectangle = texture.frame;
+			if(!textureFrame)
+			{
+				textureFrame = HELPER_RECTANGLE;
+				textureFrame.setTo(0, 0, texture.width, texture.height);
+			}
+			if((scale9Grid.x + scale9Grid.width) > textureFrame.width)
+			{
+				throw new ArgumentError(SUM_X_REGIONS_ERROR);
+			}
+			if((scale9Grid.y + scale9Grid.height) > textureFrame.height)
+			{
+				throw new ArgumentError(SUM_Y_REGIONS_ERROR);
+			}
 			this._texture = texture;
 			this._scale9Grid = scale9Grid;
 			this.initialize();
@@ -176,57 +234,62 @@ package feathers.textures
 		 */
 		private function initialize():void
 		{
-			const textureFrame:Rectangle = this._texture.frame;
-			const leftWidth:Number = this._scale9Grid.x;
-			const centerWidth:Number = this._scale9Grid.width;
-			const rightWidth:Number = textureFrame.width - this._scale9Grid.width - this._scale9Grid.x;
-			const topHeight:Number = this._scale9Grid.y;
-			const middleHeight:Number = this._scale9Grid.height;
-			const bottomHeight:Number = textureFrame.height - this._scale9Grid.height - this._scale9Grid.y;
+			var textureFrame:Rectangle = this._texture.frame;
+			if(!textureFrame)
+			{
+				textureFrame = HELPER_RECTANGLE;
+				textureFrame.setTo(0, 0, this._texture.width, this._texture.height);
+			}
+			var leftWidth:Number = this._scale9Grid.x;
+			var centerWidth:Number = this._scale9Grid.width;
+			var rightWidth:Number = textureFrame.width - this._scale9Grid.width - this._scale9Grid.x;
+			var topHeight:Number = this._scale9Grid.y;
+			var middleHeight:Number = this._scale9Grid.height;
+			var bottomHeight:Number = textureFrame.height - this._scale9Grid.height - this._scale9Grid.y;
 
-			const regionLeftWidth:Number = leftWidth + textureFrame.x;
-			const regionTopHeight:Number = topHeight + textureFrame.y;
-			const regionRightWidth:Number = rightWidth - (textureFrame.width - this._texture.width) - textureFrame.x;
-			const regionBottomHeight:Number = bottomHeight - (textureFrame.height - this._texture.height) - textureFrame.y;
+			var regionLeftWidth:Number = leftWidth + textureFrame.x;
+			var regionTopHeight:Number = topHeight + textureFrame.y;
+			var regionRightWidth:Number = rightWidth - (textureFrame.width - this._texture.width) - textureFrame.x;
+			var regionBottomHeight:Number = bottomHeight - (textureFrame.height - this._texture.height) - textureFrame.y;
 
-			const hasLeftFrame:Boolean = regionLeftWidth != leftWidth;
-			const hasTopFrame:Boolean = regionTopHeight != topHeight;
-			const hasRightFrame:Boolean = regionRightWidth != rightWidth;
-			const hasBottomFrame:Boolean = regionBottomHeight != bottomHeight;
+			var hasLeftFrame:Boolean = regionLeftWidth != leftWidth;
+			var hasTopFrame:Boolean = regionTopHeight != topHeight;
+			var hasRightFrame:Boolean = regionRightWidth != rightWidth;
+			var hasBottomFrame:Boolean = regionBottomHeight != bottomHeight;
 
-			const topLeftRegion:Rectangle = new Rectangle(0, 0, regionLeftWidth, regionTopHeight);
-			const topLeftFrame:Rectangle = (hasLeftFrame || hasTopFrame) ? new Rectangle(textureFrame.x, textureFrame.y, leftWidth, topHeight) : null;
+			var topLeftRegion:Rectangle = new Rectangle(0, 0, regionLeftWidth, regionTopHeight);
+			var topLeftFrame:Rectangle = (hasLeftFrame || hasTopFrame) ? new Rectangle(textureFrame.x, textureFrame.y, leftWidth, topHeight) : null;
 			this._topLeft = Texture.fromTexture(this._texture, topLeftRegion, topLeftFrame);
 
-			const topCenterRegion:Rectangle = new Rectangle(regionLeftWidth, 0, centerWidth, regionTopHeight);
-			const topCenterFrame:Rectangle = hasTopFrame ? new Rectangle(0, textureFrame.y, centerWidth, topHeight) : null;
+			var topCenterRegion:Rectangle = new Rectangle(regionLeftWidth, 0, centerWidth, regionTopHeight);
+			var topCenterFrame:Rectangle = hasTopFrame ? new Rectangle(0, textureFrame.y, centerWidth, topHeight) : null;
 			this._topCenter = Texture.fromTexture(this._texture, topCenterRegion, topCenterFrame);
 
-			const topRightRegion:Rectangle = new Rectangle(regionLeftWidth + centerWidth, 0, regionRightWidth, regionTopHeight);
-			const topRightFrame:Rectangle = (hasTopFrame || hasRightFrame) ? new Rectangle(0, textureFrame.y, rightWidth, topHeight) : null;
+			var topRightRegion:Rectangle = new Rectangle(regionLeftWidth + centerWidth, 0, regionRightWidth, regionTopHeight);
+			var topRightFrame:Rectangle = (hasTopFrame || hasRightFrame) ? new Rectangle(0, textureFrame.y, rightWidth, topHeight) : null;
 			this._topRight = Texture.fromTexture(this._texture, topRightRegion, topRightFrame);
 
-			const middleLeftRegion:Rectangle = new Rectangle(0, regionTopHeight, regionLeftWidth, middleHeight);
-			const middleLeftFrame:Rectangle = hasLeftFrame ? new Rectangle(textureFrame.x, 0, leftWidth, middleHeight) : null;
+			var middleLeftRegion:Rectangle = new Rectangle(0, regionTopHeight, regionLeftWidth, middleHeight);
+			var middleLeftFrame:Rectangle = hasLeftFrame ? new Rectangle(textureFrame.x, 0, leftWidth, middleHeight) : null;
 			this._middleLeft = Texture.fromTexture(this._texture, middleLeftRegion, middleLeftFrame);
 
-			const middleCenterRegion:Rectangle = new Rectangle(regionLeftWidth, regionTopHeight, centerWidth, middleHeight);
+			var middleCenterRegion:Rectangle = new Rectangle(regionLeftWidth, regionTopHeight, centerWidth, middleHeight);
 			this._middleCenter = Texture.fromTexture(this._texture, middleCenterRegion);
 
-			const middleRightRegion:Rectangle = new Rectangle(regionLeftWidth + centerWidth, regionTopHeight, regionRightWidth, middleHeight);
-			const middleRightFrame:Rectangle = hasRightFrame ? new Rectangle(0, 0, rightWidth, middleHeight) : null;
+			var middleRightRegion:Rectangle = new Rectangle(regionLeftWidth + centerWidth, regionTopHeight, regionRightWidth, middleHeight);
+			var middleRightFrame:Rectangle = hasRightFrame ? new Rectangle(0, 0, rightWidth, middleHeight) : null;
 			this._middleRight = Texture.fromTexture(this._texture, middleRightRegion, middleRightFrame);
 
-			const bottomLeftRegion:Rectangle = new Rectangle(0, regionTopHeight + middleHeight, regionLeftWidth, regionBottomHeight);
-			const bottomLeftFrame:Rectangle = (hasLeftFrame || hasBottomFrame) ? new Rectangle(textureFrame.x, 0, leftWidth, bottomHeight) : null;
+			var bottomLeftRegion:Rectangle = new Rectangle(0, regionTopHeight + middleHeight, regionLeftWidth, regionBottomHeight);
+			var bottomLeftFrame:Rectangle = (hasLeftFrame || hasBottomFrame) ? new Rectangle(textureFrame.x, 0, leftWidth, bottomHeight) : null;
 			this._bottomLeft = Texture.fromTexture(this._texture, bottomLeftRegion, bottomLeftFrame);
 
-			const bottomCenterRegion:Rectangle = new Rectangle(regionLeftWidth, regionTopHeight + middleHeight, centerWidth, regionBottomHeight);
-			const bottomCenterFrame:Rectangle = hasBottomFrame ? new Rectangle(0, 0, centerWidth, bottomHeight) : null;
+			var bottomCenterRegion:Rectangle = new Rectangle(regionLeftWidth, regionTopHeight + middleHeight, centerWidth, regionBottomHeight);
+			var bottomCenterFrame:Rectangle = hasBottomFrame ? new Rectangle(0, 0, centerWidth, bottomHeight) : null;
 			this._bottomCenter = Texture.fromTexture(this._texture, bottomCenterRegion, bottomCenterFrame);
 
-			const bottomRightRegion:Rectangle = new Rectangle(regionLeftWidth + centerWidth, regionTopHeight + middleHeight, regionRightWidth, regionBottomHeight);
-			const bottomRightFrame:Rectangle = (hasBottomFrame || hasRightFrame) ? new Rectangle(0, 0, rightWidth, bottomHeight) : null;
+			var bottomRightRegion:Rectangle = new Rectangle(regionLeftWidth + centerWidth, regionTopHeight + middleHeight, regionRightWidth, regionBottomHeight);
+			var bottomRightFrame:Rectangle = (hasBottomFrame || hasRightFrame) ? new Rectangle(0, 0, rightWidth, bottomHeight) : null;
 			this._bottomRight = Texture.fromTexture(this._texture, bottomRightRegion, bottomRightFrame);
 		}
 	}
