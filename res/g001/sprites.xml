@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TextureAtlas imagePath="sprites">
+	<!--
+	Created with ShoeBox
+	http://renderhjs.net/shoebox/
+	-->
+	<SubTexture name="att010000"	x="0"	y="363"	width="130"	height="97" frameX="-116" frameY="-11" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="att010001"	x="0"	y="183"	width="138"	height="80" frameX="-109" frameY="-11" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="att010002"	x="0"	y="0"	width="156"	height="82" frameX="-103" frameY="-11" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="att010003"	x="121"	y="562"	width="98"	height="83" frameX="-93" frameY="-18" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="att010004"	x="0"	y="83"	width="143"	height="99" frameX="-60" frameY="-23" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="att010005"	x="0"	y="264"	width="132"	height="98" frameX="-68" frameY="-24" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="att010006"	x="113"	y="863"	width="107"	height="98" frameX="-90" frameY="-24" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="att010007"	x="220"	y="483"	width="81"	height="98" frameX="-112" frameY="-24" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="hit0000"	x="116"	y="666"	width="99"	height="123" frameX="-119" frameY="-12" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="hit0001"	x="221"	y="770"	width="66"	height="139" frameX="-140" frameY="-11" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="hit0002"	x="157"	y="0"	width="90"	height="134" frameX="-138" frameY="-12" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="idle0000"	x="131"	y="363"	width="96"	height="119" frameX="-131" frameY="-10" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="idle0001"	x="216"	y="646"	width="84"	height="123" frameX="-132" frameY="-9" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="idle0002"	x="139"	y="183"	width="95"	height="106" frameX="-132" frameY="-8" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="idle0003"	x="0"	y="666"	width="115"	height="98" frameX="-132" frameY="-9" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="run0000"	x="0"	y="765"	width="115"	height="97" frameX="-125" frameY="-10" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="run0001"	x="0"	y="863"	width="112"	height="100" frameX="-126" frameY="-10" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="run0002"	x="0"	y="562"	width="120"	height="103" frameX="-126" frameY="-10" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="run0003"	x="0"	y="461"	width="126"	height="100" frameX="-126" frameY="-10" frameWidth="320" frameHeight="240"/>
+</TextureAtlas>

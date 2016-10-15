@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TextureAtlas imagePath="g001">
+	<!--
+	Created with ShoeBox
+	http://renderhjs.net/shoebox/
+	-->
+	<SubTexture name="idle0000000"	x="0"	y="99"	width="96"	height="119" frameX="-131" frameY="-10" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="idle0001000"	x="0"	y="326"	width="84"	height="123" frameX="-132" frameY="-9" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="idle0002000"	x="0"	y="219"	width="95"	height="106" frameX="-132" frameY="-8" frameWidth="320" frameHeight="240"/>
+	<SubTexture name="idle0003000"	x="0"	y="0"	width="115"	height="98" frameX="-132" frameY="-9" frameWidth="320" frameHeight="240"/>
+</TextureAtlas>
